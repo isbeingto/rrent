@@ -12,3 +12,79 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+/**
+ * 组织隔离与角色枚举
+ * 用于后续 Tenant/Org/User 之间的权限与视图隔离
+ */
+enum OrgRole {
+  OWNER
+  PROPERTY_MGR
+  OPERATOR
+  STAFF
+}
+
+/**
+ * 房源/单元状态
+ */
+enum UnitStatus {
+  VACANT
+  RESERVED
+  OCCUPIED
+  MAINTENANCE
+  OFFLINE
+}
+
+/**
+ * 租约状态
+ */
+enum LeaseStatus {
+  DRAFT
+  PENDING
+  ACTIVE
+  TERMINATED
+  EXPIRED
+}
+
+/**
+ * 账单类型（按费用种类）
+ */
+enum BillType {
+  RENT
+  DEPOSIT
+  UTILITIES
+  SERVICE
+  PENALTY
+  OTHER
+}
+
+/**
+ * 账单周期（按出账频率）
+ */
+enum BillCycle {
+  ONE_TIME
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+/**
+ * 支付状态
+ */
+enum PaymentStatus {
+  PENDING
+  PARTIAL
+  PAID
+  OVERDUE
+  CANCELED
+}
+
+/**
+ * 支付方式
+ */
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CARD
+  ONLINE
+}
