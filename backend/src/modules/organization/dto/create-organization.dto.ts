@@ -1,4 +1,11 @@
-import { IsNotEmpty, IsOptional, IsString, MaxLength, MinLength, Matches } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+  Matches,
+} from "class-validator";
 
 export class CreateOrganizationDto {
   @IsString()
@@ -11,7 +18,7 @@ export class CreateOrganizationDto {
   @MinLength(3)
   @MaxLength(50)
   @Matches(/^[a-zA-Z0-9-]+$/, {
-    message: 'code can only contain letters, numbers, and hyphens',
+    message: "code can only contain letters, numbers, and hyphens",
   })
   code!: string;
 
