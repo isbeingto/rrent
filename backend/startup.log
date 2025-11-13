@@ -1,0 +1,111 @@
+
+> rrent-backend@0.0.1 start:dev /srv/rrent/backend
+> nest start --watch
+
+[2J[3J[H[[90m8:00:45 AM[0m] Starting compilation in watch mode...
+
+[96msrc/app.controller.ts[0m:[93m8[0m:[93m3[0m - [91merror[0m[90m TS1241: [0mUnable to resolve signature of method decorator when called as an expression.
+  The runtime will invoke the decorator with 2 arguments, but the decorator expects 3.
+
+[7m8[0m   @Get()
+[7m [0m [91m  ~~~~~~[0m
+
+  [96mnode_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.decorators.legacy.d.ts[0m:[93m21[0m:[93m82[0m
+    [7m21[0m declare type MethodDecorator = <T>(target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>) => TypedPropertyDescriptor<T> | void;
+    [7m  [0m [96m                                                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    An argument for 'descriptor' was not provided.
+
+[96msrc/app.controller.ts[0m:[93m8[0m:[93m4[0m - [91merror[0m[90m TS1270: [0mDecorator function return type 'void | TypedPropertyDescriptor<unknown>' is not assignable to type 'void | (() => string)'.
+  Type 'TypedPropertyDescriptor<unknown>' is not assignable to type 'void | (() => string)'.
+
+[7m8[0m   @Get()
+[7m [0m [91m   ~~~~~[0m
+
+[96msrc/app.controller.ts[0m:[93m13[0m:[93m3[0m - [91merror[0m[90m TS1241: [0mUnable to resolve signature of method decorator when called as an expression.
+  The runtime will invoke the decorator with 2 arguments, but the decorator expects 3.
+
+[7m13[0m   @Get('health')
+[7m  [0m [91m  ~~~~~~~~~~~~~~[0m
+
+  [96mnode_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.decorators.legacy.d.ts[0m:[93m21[0m:[93m82[0m
+    [7m21[0m declare type MethodDecorator = <T>(target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>) => TypedPropertyDescriptor<T> | void;
+    [7m  [0m [96m                                                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    An argument for 'descriptor' was not provided.
+
+[96msrc/app.controller.ts[0m:[93m13[0m:[93m4[0m - [91merror[0m[90m TS1270: [0mDecorator function return type 'void | TypedPropertyDescriptor<unknown>' is not assignable to type 'void | (() => { status: string; timestamp: string; })'.
+  Type 'TypedPropertyDescriptor<unknown>' is not assignable to type 'void | (() => { status: string; timestamp: string; })'.
+
+[7m13[0m   @Get('health')
+[7m  [0m [91m   ~~~~~~~~~~~~~[0m
+
+[96msrc/app.controller.ts[0m:[93m18[0m:[93m3[0m - [91merror[0m[90m TS1241: [0mUnable to resolve signature of method decorator when called as an expression.
+  The runtime will invoke the decorator with 2 arguments, but the decorator expects 3.
+
+[7m18[0m   @Get('api')
+[7m  [0m [91m  ~~~~~~~~~~~[0m
+
+  [96mnode_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.decorators.legacy.d.ts[0m:[93m21[0m:[93m82[0m
+    [7m21[0m declare type MethodDecorator = <T>(target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>) => TypedPropertyDescriptor<T> | void;
+    [7m  [0m [96m                                                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    An argument for 'descriptor' was not provided.
+
+[96msrc/app.controller.ts[0m:[93m18[0m:[93m4[0m - [91merror[0m[90m TS1270: [0mDecorator function return type 'void | TypedPropertyDescriptor<unknown>' is not assignable to type 'void | (() => { message: string; version: string; endpoints: { path: string; method: string; description: string; }[]; })'.
+  Type 'TypedPropertyDescriptor<unknown>' is not assignable to type 'void | (() => { message: string; version: string; endpoints: { path: string; method: string; description: string; }[]; })'.
+
+[7m18[0m   @Get('api')
+[7m  [0m [91m   ~~~~~~~~~~[0m
+
+[[90m8:00:47 AM[0m] Found 6 errors. Watching for file changes.
+
+[2J[3J[H[[90m8:01:11 AM[0m] File change detected. Starting incremental compilation...
+
+[[90m8:01:11 AM[0m] Found 0 errors. Watching for file changes.
+
+[32m[Nest] 46529  - [39m11/13/2025, 8:01:12 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 46529  - [39m11/13/2025, 8:01:12 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +14ms[39m
+[32m[Nest] 46529  - [39m11/13/2025, 8:01:12 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 46529  - [39m11/13/2025, 8:01:12 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 46529  - [39m11/13/2025, 8:01:12 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +268ms[39m
+[32m[Nest] 46529  - [39m11/13/2025, 8:01:12 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +4ms[39m
+[32m[Nest] 46529  - [39m11/13/2025, 8:01:12 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/health, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 46529  - [39m11/13/2025, 8:01:12 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 46529  - [39m11/13/2025, 8:01:12 AM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +3ms[39m
+Application is running on: http://localhost:3000
+Killed
+[2J[3J[H[[90m8:02:29 AM[0m] File change detected. Starting incremental compilation...
+
+[2J[3J[H[[90m8:04:51 AM[0m] File change detected. Starting incremental compilation...
+
+[[90m8:04:51 AM[0m] Found 0 errors. Watching for file changes.
+
+[32m[Nest] 48183  - [39m11/13/2025, 8:04:53 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 48183  - [39m11/13/2025, 8:04:53 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +30ms[39m
+[32m[Nest] 48183  - [39m11/13/2025, 8:04:53 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +3ms[39m
+[32m[Nest] 48183  - [39m11/13/2025, 8:04:53 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 48183  - [39m11/13/2025, 8:04:53 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +424ms[39m
+[32m[Nest] 48183  - [39m11/13/2025, 8:04:53 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +4ms[39m
+[32m[Nest] 48183  - [39m11/13/2025, 8:04:53 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/health, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 48183  - [39m11/13/2025, 8:04:53 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/api, GET} route[39m[38;5;3m +2ms[39m
+[32m[Nest] 48183  - [39m11/13/2025, 8:04:53 AM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +10ms[39m
+[31m[Nest] 48183  - [39m11/13/2025, 8:04:53 AM [31m  ERROR[39m [38;5;3m[NestApplication] [39m[31mError: listen EADDRINUSE: address already in use :::3000[39m[38;5;3m +4ms[39m
+node:net:1908
+    const ex = new UVExceptionWithHostPort(err, 'listen', address, port);
+               ^
+
+Error: listen EADDRINUSE: address already in use :::3000
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at Server.listen (node:net:2067:7)
+    at ExpressAdapter.listen (/srv/rrent/backend/node_modules/.pnpm/@nestjs+platform-express@10.4.20_@nestjs+common@10.4.20_class-transformer@0.5.1_class-v_493714a91907cdb279e27ac022783351/node_modules/@nestjs/platform-express/adapters/express-adapter.js:95:32)
+    at /srv/rrent/backend/node_modules/.pnpm/@nestjs+core@10.4.20_@nestjs+common@10.4.20_class-transformer@0.5.1_class-validator@0.1_297e3f07848a68f9949b640773de1b75/node_modules/@nestjs/core/nest-application.js:183:30
+    at new Promise (<anonymous>)
+    at NestApplication.listen (/srv/rrent/backend/node_modules/.pnpm/@nestjs+core@10.4.20_@nestjs+common@10.4.20_class-transformer@0.5.1_class-validator@0.1_297e3f07848a68f9949b640773de1b75/node_modules/@nestjs/core/nest-application.js:173:16)
+    at async bootstrap (/srv/rrent/backend/src/main.ts:25:3) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3000
+}
+
+Node.js v20.19.5
