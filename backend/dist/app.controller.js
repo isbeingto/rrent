@@ -19,17 +19,14 @@ let AppController = class AppController {
     getHello() {
         return this.appService.getHello();
     }
-    getHealth() {
-        return this.appService.getHealth();
-    }
     getApi() {
         return {
-            message: 'RRent API',
-            version: '0.0.1',
+            message: "RRent API",
+            version: "0.0.1",
             endpoints: [
-                { path: '/', method: 'GET', description: 'Welcome message' },
-                { path: '/health', method: 'GET', description: 'Health check' },
-                { path: '/api', method: 'GET', description: 'API info' },
+                { path: "/", method: "GET", description: "Welcome message" },
+                { path: "/health", method: "GET", description: "Health check" },
+                { path: "/api", method: "GET", description: "API info" },
             ],
         };
     }
@@ -42,13 +39,7 @@ __decorate([
     __metadata("design:returntype", String)
 ], AppController.prototype, "getHello", null);
 __decorate([
-    (0, common_1.Get)('health'),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", void 0)
-], AppController.prototype, "getHealth", null);
-__decorate([
-    (0, common_1.Get)('api'),
+    (0, common_1.Get)("api"),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)

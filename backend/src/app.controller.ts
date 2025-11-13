@@ -1,5 +1,5 @@
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { Controller, Get } from "@nestjs/common";
+import { AppService } from "./app.service";
 
 @Controller()
 export class AppController {
@@ -10,15 +10,15 @@ export class AppController {
     return this.appService.getHello();
   }
 
-  @Get('api')
+  @Get("api")
   getApi() {
     return {
-      message: 'RRent API',
-      version: '0.0.1',
+      message: "RRent API",
+      version: "0.0.1",
       endpoints: [
-        { path: '/', method: 'GET', description: 'Welcome message' },
-        { path: '/health', method: 'GET', description: 'Health check' },
-        { path: '/api', method: 'GET', description: 'API info' },
+        { path: "/", method: "GET", description: "Welcome message" },
+        { path: "/health", method: "GET", description: "Health check" },
+        { path: "/api", method: "GET", description: "API info" },
       ],
     };
   }

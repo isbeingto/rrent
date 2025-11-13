@@ -11,35 +11,34 @@ const common_1 = require("@nestjs/common");
 let HttpExceptionFilter = class HttpExceptionFilter {
     catch(exception, host) {
         const ctx = host.switchToHttp();
-        const request = ctx.getRequest();
         const response = ctx.getResponse();
         let status = common_1.HttpStatus.INTERNAL_SERVER_ERROR;
         let errorResponse = {
             statusCode: status,
-            error: 'Internal Server Error',
-            message: 'Unexpected error',
+            error: "Internal Server Error",
+            message: "Unexpected error",
         };
         if (exception instanceof common_1.HttpException) {
             status = exception.getStatus();
             const res = exception.getResponse();
-            if (typeof res === 'string') {
+            if (typeof res === "string") {
                 errorResponse = {
                     statusCode: status,
-                    error: common_1.HttpStatus[status] ?? 'Error',
+                    error: common_1.HttpStatus[status] ?? "Error",
                     message: res,
                 };
             }
             else {
                 errorResponse = {
                     statusCode: res.statusCode ?? status,
-                    error: res.error ?? common_1.HttpStatus[status] ?? 'Error',
-                    message: res.message ?? '',
+                    error: res.error ?? common_1.HttpStatus[status] ?? "Error",
+                    message: res.message ?? "",
                 };
             }
         }
         else if (exception instanceof Error) {
             // Log the actual error for debugging
-            console.error('[Exception]', exception);
+            console.error("[Exception]", exception);
         }
         response.status(status).json(errorResponse);
     }

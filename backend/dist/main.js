@@ -26,11 +26,11 @@ async function bootstrap() {
     }));
     // Enable CORS with flexible origin for development
     app.enableCors({
-        origin: '*',
+        origin: "*",
         credentials: false,
     });
     const configService = app.get(config_1.ConfigService);
-    const port = configService.get('PORT') ?? 3000;
+    const port = configService.get("PORT") ?? 3000;
     await app.listen(port);
     console.log(`Application is running on: http://localhost:${port}`);
 }
