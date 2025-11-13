@@ -89,7 +89,10 @@ enum PaymentMethod {
   ONLINE
 }
 
-/// Organization tenant root entity for multi-tenant isolation
+/**
+ * 多租户隔离的核心实体
+ * 代表一个物业公司 / 运营方 / 房源管理主体
+ */
 model Organization {
   id          String  @id @default(uuid())
   name        String
