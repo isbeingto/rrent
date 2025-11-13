@@ -108,6 +108,9 @@ model Organization {
   properties Property[]
   tenants    Tenant[]
   leases     Lease[]
+  payments   Payment[]
+  users      User[]
+  auditLogs  AuditLog[]
 
   @@index([name])
 }
@@ -234,7 +237,94 @@ model Lease {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  payments Payment[]
+
   @@index([unitId, status])
   @@index([organizationId, status])
   @@index([tenantId, status])
+}
+
+/**
+ * 支付/账单记录
+ * 代表租约上的一条账单或一笔应付/实付记录
+ */
+model Payment {
+  id String @id @default(uuid())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  leaseId String
+  lease   Lease  @relation(fields: [leaseId], references: [id])
+
+  type   BillType
+  status PaymentStatus  @default(PENDING)
+  method PaymentMethod?
+
+  amount   Decimal @db.Decimal(10, 2)
+  currency String  @default("CNY")
+
+  dueDate DateTime
+  paidAt  DateTime?
+
+  externalRef String?
+  notes       String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId, status, dueDate])
+  @@index([leaseId, status])
+}
+
+/**
+ * 系统用户（登录用户）
+ * 与 Tenant（租客）分开，代表管理员/员工等
+ */
+model User {
+  id String @id @default(uuid())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  email        String  @unique
+  passwordHash String
+  fullName     String?
+  role         OrgRole @default(STAFF)
+
+  isActive    Boolean   @default(true)
+  lastLoginAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  auditLogs AuditLog[]
+
+  @@index([organizationId, role])
+}
+
+/**
+ * 审计日志
+ * 记录系统操作的可追溯性记录
+ */
+model AuditLog {
+  id String @id @default(uuid())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  entity    String
+  entityId  String?
+  action    String
+  ip        String?
+  userAgent String?
+  metadata  Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, entity, entityId])
 }
