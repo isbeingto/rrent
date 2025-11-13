@@ -1,0 +1,109 @@
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { Organization, Prisma } from "@prisma/client";
+import { CreateOrganizationDto } from "./dto/create-organization.dto";
+import { UpdateOrganizationDto } from "./dto/update-organization.dto";
+import { QueryOrganizationDto } from "./dto/query-organization.dto";
+import { Paginated, createPaginatedResult } from "../../common/pagination";
+
+@Injectable()
+export class OrganizationService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(dto: CreateOrganizationDto): Promise<Organization> {
+    try {
+      return await this.prisma.organization.create({
+        data: {
+          name: dto.name,
+          code: dto.code,
+          description: dto.description,
+          timezone: dto.timezone || "Asia/Shanghai",
+          isActive: true,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        throw new ConflictException(
+          `Organization with code "${dto.code}" already exists`,
+        );
+      }
+      throw error;
+    }
+  }
+
+  async findById(id: string): Promise<Organization> {
+    const organization = await this.prisma.organization.findUnique({
+      where: { id },
+    });
+
+    if (!organization) {
+      throw new NotFoundException(`Organization with id "${id}" not found`);
+    }
+
+    return organization;
+  }
+
+  async findMany(
+    query: QueryOrganizationDto,
+  ): Promise<Paginated<Organization>> {
+    const { page = 1, limit = 20, keyword } = query;
+
+    const where: Prisma.OrganizationWhereInput = {};
+    if (keyword) {
+      where.OR = [
+        { name: { contains: keyword, mode: "insensitive" } },
+        { code: { contains: keyword, mode: "insensitive" } },
+      ];
+    }
+
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.organization.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+      }),
+      this.prisma.organization.count({ where }),
+    ]);
+
+    return createPaginatedResult(items, total, page, limit);
+  }
+
+  async update(id: string, dto: UpdateOrganizationDto): Promise<Organization> {
+    await this.findById(id);
+
+    try {
+      return await this.prisma.organization.update({
+        where: { id },
+        data: {
+          name: dto.name,
+          description: dto.description,
+          timezone: dto.timezone,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2025"
+      ) {
+        throw new NotFoundException(`Organization with id "${id}" not found`);
+      }
+      throw error;
+    }
+  }
+
+  async remove(id: string): Promise<void> {
+    await this.findById(id);
+
+    await this.prisma.organization.delete({
+      where: { id },
+    });
+  }
+}
