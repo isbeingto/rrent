@@ -105,5 +105,37 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  properties Property[]
+
   @@index([name])
+}
+
+/**
+ * 公寓/楼盘/小区资产项目
+ * 每个 Organization 下可以有多个 Property
+ */
+model Property {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  name        String
+  code        String
+  description String? @db.Text
+
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  state        String?
+  postalCode   String?
+  country      String? @default("CN")
+
+  timezone String  @default("Asia/Shanghai")
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, code])
+  @@index([organizationId, name])
 }
