@@ -1,14 +1,15 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-} from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { Property, Prisma } from "@prisma/client";
 import { CreatePropertyDto } from "./dto/create-property.dto";
 import { UpdatePropertyDto } from "./dto/update-property.dto";
 import { QueryPropertyDto } from "./dto/query-property.dto";
 import { Paginated, createPaginatedResult } from "../../common/pagination";
+import {
+  OrganizationNotFoundException,
+  PropertyNotFoundException,
+} from "../../common/errors/not-found.exception";
+import { PropertyCodeConflictException } from "../../common/errors/conflict.exception";
 
 @Injectable()
 export class PropertyService {
@@ -21,9 +22,7 @@ export class PropertyService {
     });
 
     if (!org) {
-      throw new NotFoundException(
-        `Organization with id "${dto.organizationId}" not found`,
-      );
+      throw new OrganizationNotFoundException(dto.organizationId);
     }
 
     try {
@@ -47,9 +46,7 @@ export class PropertyService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2002"
       ) {
-        throw new ConflictException(
-          `Property with code "${dto.code}" already exists in this organization`,
-        );
+        throw new PropertyCodeConflictException(dto.code);
       }
       throw error;
     }
@@ -64,9 +61,7 @@ export class PropertyService {
     });
 
     if (!property) {
-      throw new NotFoundException(
-        `Property with id "${id}" not found in organization "${organizationId}"`,
-      );
+      throw new PropertyNotFoundException(id);
     }
 
     return property;
@@ -143,15 +138,13 @@ export class PropertyService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2002"
       ) {
-        throw new ConflictException(
-          `Property with code "${dto.code}" already exists in this organization`,
-        );
+        throw new PropertyCodeConflictException(dto.code!);
       }
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2025"
       ) {
-        throw new NotFoundException(`Property with id "${id}" not found`);
+        throw new PropertyNotFoundException(id);
       }
       throw error;
     }

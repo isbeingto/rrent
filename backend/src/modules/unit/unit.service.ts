@@ -1,14 +1,15 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-} from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { Unit, Prisma, UnitStatus } from "@prisma/client";
 import { CreateUnitDto } from "./dto/create-unit.dto";
 import { UpdateUnitDto } from "./dto/update-unit.dto";
 import { QueryUnitDto } from "./dto/query-unit.dto";
 import { Paginated, createPaginatedResult } from "../../common/pagination";
+import {
+  PropertyNotFoundException,
+  UnitNotFoundException,
+} from "../../common/errors/not-found.exception";
+import { UnitNumberConflictException } from "../../common/errors/conflict.exception";
 
 @Injectable()
 export class UnitService {
@@ -24,9 +25,7 @@ export class UnitService {
     });
 
     if (!property) {
-      throw new NotFoundException(
-        `Property with id "${dto.propertyId}" not found in organization "${organizationId}"`,
-      );
+      throw new PropertyNotFoundException(dto.propertyId);
     }
 
     try {
@@ -48,9 +47,7 @@ export class UnitService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2002"
       ) {
-        throw new ConflictException(
-          `Unit with number "${dto.unitNumber}" already exists in this property`,
-        );
+        throw new UnitNumberConflictException(dto.unitNumber!);
       }
       throw error;
     }
@@ -70,9 +67,7 @@ export class UnitService {
     });
 
     if (!unit) {
-      throw new NotFoundException(
-        `Unit with id "${id}" not found in organization "${organizationId}"`,
-      );
+      throw new UnitNotFoundException(id);
     }
 
     return unit;
@@ -147,15 +142,13 @@ export class UnitService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2002"
       ) {
-        throw new ConflictException(
-          `Unit with number "${dto.unitNumber}" already exists in this property`,
-        );
+        throw new UnitNumberConflictException(dto.unitNumber!);
       }
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2025"
       ) {
-        throw new NotFoundException(`Unit with id "${id}" not found`);
+        throw new UnitNotFoundException(id);
       }
       throw error;
     }
@@ -173,9 +166,7 @@ export class UnitService {
     const unit = await this.findById(id, organizationId);
 
     if (!unit.isActive) {
-      throw new NotFoundException(
-        `Unit with id "${id}" is not active in organization "${organizationId}"`,
-      );
+      throw new UnitNotFoundException(id);
     }
 
     return unit;

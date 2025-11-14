@@ -1,33 +1,43 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
-import { Payment, Prisma, PaymentStatus } from "@prisma/client";
+import { Payment, Prisma } from "@prisma/client";
 import { CreatePaymentDto } from "./dto/create-payment.dto";
 import { UpdatePaymentDto } from "./dto/update-payment.dto";
 import { QueryPaymentDto } from "./dto/query-payment.dto";
 import { Paginated, createPaginatedResult } from "../../common/pagination";
+import {
+  LeaseNotFoundException,
+  PaymentNotFoundException,
+} from "../../common/errors/not-found.exception";
 
 @Injectable()
 export class PaymentService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreatePaymentDto): Promise<Payment> {
-    await this.ensureOrganizationExists(dto.organizationId);
-    await this.ensureLeaseBelongsToOrganization(
-      dto.leaseId,
-      dto.organizationId,
-    );
+    // Validate lease exists and belongs to organization
+    const lease = await this.prisma.lease.findFirst({
+      where: {
+        id: dto.leaseId,
+        organizationId: dto.organizationId,
+      },
+    });
 
-    return this.prisma.payment.create({
+    if (!lease) {
+      throw new LeaseNotFoundException(dto.leaseId);
+    }
+
+    return await this.prisma.payment.create({
       data: {
         organizationId: dto.organizationId,
         leaseId: dto.leaseId,
         type: dto.type,
-        status: dto.status ?? PaymentStatus.PENDING,
-        method: dto.method,
+        status: dto.status,
         amount: dto.amount,
-        currency: dto.currency ?? "CNY",
-        dueDate: new Date(dto.dueDate),
-        paidAt: dto.paidAt ? new Date(dto.paidAt) : undefined,
+        currency: dto.currency,
+        dueDate: dto.dueDate,
+        method: dto.method,
+        paidAt: dto.paidAt,
         externalRef: dto.externalRef,
         notes: dto.notes,
       },
@@ -43,49 +53,21 @@ export class PaymentService {
     });
 
     if (!payment) {
-      throw new NotFoundException(
-        `Payment with id "${id}" not found in organization "${organizationId}"`,
-      );
+      throw new PaymentNotFoundException(id);
     }
 
     return payment;
   }
 
   async findMany(query: QueryPaymentDto): Promise<Paginated<Payment>> {
-    const {
-      page = 1,
-      limit = 20,
-      organizationId,
-      leaseId,
-      status,
-      dueDateFrom,
-      dueDateTo,
-    } = query;
+    const { page = 1, limit = 20, organizationId, status } = query;
 
     const where: Prisma.PaymentWhereInput = {
       organizationId,
     };
 
-    if (leaseId) {
-      where.leaseId = leaseId;
-    }
-
     if (status) {
       where.status = status;
-    }
-
-    if (dueDateFrom || dueDateTo) {
-      const dueDateFilter: Prisma.DateTimeFilter = {};
-
-      if (dueDateFrom) {
-        dueDateFilter.gte = new Date(dueDateFrom);
-      }
-
-      if (dueDateTo) {
-        dueDateFilter.lte = new Date(dueDateTo);
-      }
-
-      where.dueDate = dueDateFilter;
     }
 
     const [items, total] = await this.prisma.$transaction([
@@ -93,7 +75,7 @@ export class PaymentService {
         where,
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: { dueDate: "asc" },
+        orderBy: { createdAt: "desc" },
       }),
       this.prisma.payment.count({ where }),
     ]);
@@ -108,12 +90,12 @@ export class PaymentService {
   ): Promise<Payment> {
     await this.findById(id, organizationId);
 
-    return this.prisma.payment.update({
+    return await this.prisma.payment.update({
       where: { id },
       data: {
         status: dto.status,
         method: dto.method,
-        paidAt: dto.paidAt ? new Date(dto.paidAt) : undefined,
+        paidAt: dto.paidAt,
         externalRef: dto.externalRef,
         notes: dto.notes,
       },
@@ -126,30 +108,5 @@ export class PaymentService {
     await this.prisma.payment.delete({
       where: { id },
     });
-  }
-
-  private async ensureOrganizationExists(id: string): Promise<void> {
-    const organization = await this.prisma.organization.findUnique({
-      where: { id },
-    });
-
-    if (!organization) {
-      throw new NotFoundException(`Organization with id "${id}" not found`);
-    }
-  }
-
-  private async ensureLeaseBelongsToOrganization(
-    leaseId: string,
-    organizationId: string,
-  ): Promise<void> {
-    const lease = await this.prisma.lease.findUnique({
-      where: { id: leaseId },
-    });
-
-    if (!lease || lease.organizationId !== organizationId) {
-      throw new NotFoundException(
-        `Lease with id "${leaseId}" not found in organization "${organizationId}"`,
-      );
-    }
   }
 }

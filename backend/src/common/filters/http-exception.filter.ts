@@ -6,11 +6,13 @@ import {
   HttpStatus,
 } from "@nestjs/common";
 import { Response } from "express";
+import { AppException } from "../errors/app-exception.base";
 
 interface ErrorResponse {
   statusCode: number;
   error: string;
   message: string | string[];
+  code?: string;
 }
 
 @Catch()
@@ -26,7 +28,23 @@ export class HttpExceptionFilter implements ExceptionFilter {
       message: "Unexpected error",
     };
 
-    if (exception instanceof HttpException) {
+    // 优先处理 AppException（带 code）
+    if (exception instanceof AppException) {
+      status = exception.getStatus();
+      const res = exception.getResponse() as Record<string, unknown>;
+
+      errorResponse = {
+        statusCode: status,
+        error: exception.constructor.name,
+        message: exception.message,
+        code: exception.code,
+      };
+
+      // 如果 getResponse 返回了额外字段，合并它们
+      if (typeof res === "object" && res !== null) {
+        Object.assign(errorResponse, res);
+      }
+    } else if (exception instanceof HttpException) {
       status = exception.getStatus();
       const res = exception.getResponse() as
         | string
@@ -34,6 +52,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
             statusCode?: number;
             message?: string | string[];
             error?: string;
+            code?: string;
           };
 
       if (typeof res === "string") {
@@ -48,10 +67,19 @@ export class HttpExceptionFilter implements ExceptionFilter {
           error: res.error ?? (HttpStatus[status] as string) ?? "Error",
           message: res.message ?? "",
         };
+        // 如果原始异常中有 code，保留它
+        if (res.code) {
+          errorResponse.code = res.code;
+        }
       }
     } else if (exception instanceof Error) {
       // Log the actual error for debugging
       console.error("[Exception]", exception);
+      errorResponse = {
+        statusCode: status,
+        error: "Internal Server Error",
+        message: exception.message || "Unexpected error",
+      };
     }
 
     response.status(status).json(errorResponse);

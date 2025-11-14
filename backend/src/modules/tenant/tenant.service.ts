@@ -1,14 +1,18 @@
-import {
-  Injectable,
-  ConflictException,
-  NotFoundException,
-} from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { Tenant, Prisma } from "@prisma/client";
 import { CreateTenantDto } from "./dto/create-tenant.dto";
 import { UpdateTenantDto } from "./dto/update-tenant.dto";
 import { QueryTenantDto } from "./dto/query-tenant.dto";
 import { Paginated, createPaginatedResult } from "../../common/pagination";
+import {
+  OrganizationNotFoundException,
+  TenantNotFoundException,
+} from "../../common/errors/not-found.exception";
+import {
+  TenantEmailConflictException,
+  TenantPhoneConflictException,
+} from "../../common/errors/conflict.exception";
 
 @Injectable()
 export class TenantService {
@@ -49,9 +53,7 @@ export class TenantService {
     });
 
     if (!tenant) {
-      throw new NotFoundException(
-        `Tenant with id "${id}" not found in organization "${organizationId}"`,
-      );
+      throw new TenantNotFoundException(id);
     }
 
     return tenant;
@@ -128,7 +130,7 @@ export class TenantService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2025"
       ) {
-        throw new NotFoundException(`Tenant with id "${id}" not found`);
+        throw new TenantNotFoundException(id);
       }
       throw error;
     }
@@ -148,26 +150,22 @@ export class TenantService {
     });
 
     if (!organization) {
-      throw new NotFoundException(`Organization with id "${id}" not found`);
+      throw new OrganizationNotFoundException(id);
     }
   }
 
   private buildConflictException(
     error: Prisma.PrismaClientKnownRequestError,
-  ): ConflictException {
+  ): Error {
     const fields = (error.meta?.target ?? []) as string[];
     if (fields.includes("email")) {
-      return new ConflictException(
-        "Tenant with this email already exists in the organization",
-      );
+      return new TenantEmailConflictException("email");
     }
     if (fields.includes("phone")) {
-      return new ConflictException(
-        "Tenant with this phone already exists in the organization",
-      );
+      return new TenantPhoneConflictException("phone");
     }
 
-    return new ConflictException(
+    return new Error(
       "Tenant with the same identifier already exists in the organization",
     );
   }

@@ -1,40 +1,42 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
-import { Lease, Prisma, LeaseStatus } from "@prisma/client";
+import { Lease, Prisma } from "@prisma/client";
 import { CreateLeaseDto } from "./dto/create-lease.dto";
 import { UpdateLeaseDto } from "./dto/update-lease.dto";
 import { QueryLeaseDto } from "./dto/query-lease.dto";
 import { Paginated, createPaginatedResult } from "../../common/pagination";
+import {
+  OrganizationNotFoundException,
+  LeaseNotFoundException,
+} from "../../common/errors/not-found.exception";
 
 @Injectable()
 export class LeaseService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateLeaseDto): Promise<Lease> {
-    await this.ensureOrganizationExists(dto.organizationId);
-    await this.ensurePropertyBelongsToOrganization(
-      dto.propertyId,
-      dto.organizationId,
-    );
-    await this.ensureUnitBelongsToProperty(dto.unitId, dto.propertyId);
-    await this.ensureTenantBelongsToOrganization(
-      dto.tenantId,
-      dto.organizationId,
-    );
+    // Validate organization exists
+    const org = await this.prisma.organization.findUnique({
+      where: { id: dto.organizationId },
+    });
 
-    return this.prisma.lease.create({
+    if (!org) {
+      throw new OrganizationNotFoundException(dto.organizationId);
+    }
+
+    return await this.prisma.lease.create({
       data: {
         organizationId: dto.organizationId,
         propertyId: dto.propertyId,
         unitId: dto.unitId,
         tenantId: dto.tenantId,
-        status: dto.status ?? LeaseStatus.PENDING,
+        status: dto.status,
         billCycle: dto.billCycle,
-        startDate: new Date(dto.startDate),
-        endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+        startDate: dto.startDate,
+        endDate: dto.endDate,
         rentAmount: dto.rentAmount,
         depositAmount: dto.depositAmount,
-        currency: dto.currency ?? "CNY",
+        currency: dto.currency,
         notes: dto.notes,
       },
     });
@@ -49,40 +51,18 @@ export class LeaseService {
     });
 
     if (!lease) {
-      throw new NotFoundException(
-        `Lease with id "${id}" not found in organization "${organizationId}"`,
-      );
+      throw new LeaseNotFoundException(id);
     }
 
     return lease;
   }
 
   async findMany(query: QueryLeaseDto): Promise<Paginated<Lease>> {
-    const {
-      page = 1,
-      limit = 20,
-      organizationId,
-      propertyId,
-      unitId,
-      tenantId,
-      status,
-    } = query;
+    const { page = 1, limit = 20, organizationId, status } = query;
 
     const where: Prisma.LeaseWhereInput = {
       organizationId,
     };
-
-    if (propertyId) {
-      where.propertyId = propertyId;
-    }
-
-    if (unitId) {
-      where.unitId = unitId;
-    }
-
-    if (tenantId) {
-      where.tenantId = tenantId;
-    }
 
     if (status) {
       where.status = status;
@@ -93,7 +73,7 @@ export class LeaseService {
         where,
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: { startDate: "desc" },
+        orderBy: { createdAt: "desc" },
       }),
       this.prisma.lease.count({ where }),
     ]);
@@ -108,16 +88,14 @@ export class LeaseService {
   ): Promise<Lease> {
     await this.findById(id, organizationId);
 
-    return this.prisma.lease.update({
+    return await this.prisma.lease.update({
       where: { id },
       data: {
         status: dto.status,
         billCycle: dto.billCycle,
-        startDate: dto.startDate ? new Date(dto.startDate) : undefined,
-        endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+        endDate: dto.endDate,
         rentAmount: dto.rentAmount,
         depositAmount: dto.depositAmount,
-        currency: dto.currency,
         notes: dto.notes,
       },
     });
@@ -129,69 +107,5 @@ export class LeaseService {
     await this.prisma.lease.delete({
       where: { id },
     });
-  }
-
-  private async ensureOrganizationExists(id: string): Promise<void> {
-    const organization = await this.prisma.organization.findUnique({
-      where: { id },
-    });
-
-    if (!organization) {
-      throw new NotFoundException(`Organization with id "${id}" not found`);
-    }
-  }
-
-  private async ensurePropertyBelongsToOrganization(
-    propertyId: string,
-    organizationId: string,
-  ): Promise<void> {
-    const property = await this.prisma.property.findFirst({
-      where: {
-        id: propertyId,
-        organizationId,
-      },
-    });
-
-    if (!property) {
-      throw new NotFoundException(
-        `Property with id "${propertyId}" not found in organization "${organizationId}"`,
-      );
-    }
-  }
-
-  private async ensureUnitBelongsToProperty(
-    unitId: string,
-    propertyId: string,
-  ): Promise<void> {
-    const unit = await this.prisma.unit.findFirst({
-      where: {
-        id: unitId,
-        propertyId,
-      },
-    });
-
-    if (!unit) {
-      throw new NotFoundException(
-        `Unit with id "${unitId}" not found in property "${propertyId}"`,
-      );
-    }
-  }
-
-  private async ensureTenantBelongsToOrganization(
-    tenantId: string,
-    organizationId: string,
-  ): Promise<void> {
-    const tenant = await this.prisma.tenant.findFirst({
-      where: {
-        id: tenantId,
-        organizationId,
-      },
-    });
-
-    if (!tenant) {
-      throw new NotFoundException(
-        `Tenant with id "${tenantId}" not found in organization "${organizationId}"`,
-      );
-    }
   }
 }

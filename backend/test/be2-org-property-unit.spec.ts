@@ -1,11 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from "@nestjs/testing";
-import { ConflictException, NotFoundException } from "@nestjs/common";
 import { Prisma, UnitStatus } from "@prisma/client";
 import { OrganizationService } from "../src/modules/organization/organization.service";
 import { PropertyService } from "../src/modules/property/property.service";
 import { UnitService } from "../src/modules/unit/unit.service";
 import { PrismaService } from "../src/prisma/prisma.service";
+import {
+  OrganizationCodeConflictException,
+  PropertyCodeConflictException,
+  UnitNumberConflictException,
+} from "../src/common/errors/conflict.exception";
+import {
+  OrganizationNotFoundException,
+  PropertyNotFoundException,
+  UnitNotFoundException,
+} from "../src/common/errors/not-found.exception";
 
 describe("BE-2-30: Organization, Property, Unit Services", () => {
   let organizationService: OrganizationService;
@@ -115,7 +124,7 @@ describe("BE-2-30: Organization, Property, Unit Services", () => {
         mockPrisma.organization.create.mockRejectedValue(error);
 
         await expect(organizationService.create(dto)).rejects.toThrow(
-          ConflictException,
+          OrganizationCodeConflictException,
         );
         await expect(organizationService.create(dto)).rejects.toThrow(
           "already exists",
@@ -183,7 +192,7 @@ describe("BE-2-30: Organization, Property, Unit Services", () => {
         mockPrisma.organization.findUnique.mockResolvedValue(null);
 
         await expect(organizationService.findById("org-999")).rejects.toThrow(
-          NotFoundException,
+          OrganizationNotFoundException,
         );
         await expect(organizationService.findById("org-999")).rejects.toThrow(
           "not found",
@@ -304,7 +313,7 @@ describe("BE-2-30: Organization, Property, Unit Services", () => {
         mockPrisma.organization.findUnique.mockResolvedValue(null);
 
         await expect(propertyService.create(dto as any)).rejects.toThrow(
-          NotFoundException,
+          OrganizationNotFoundException,
         );
         await expect(propertyService.create(dto as any)).rejects.toThrow(
           "Organization",
@@ -397,7 +406,7 @@ describe("BE-2-30: Organization, Property, Unit Services", () => {
         mockPrisma.property.create.mockRejectedValue(error);
 
         await expect(propertyService.create(dto as any)).rejects.toThrow(
-          ConflictException,
+          PropertyCodeConflictException,
         );
         await expect(propertyService.create(dto as any)).rejects.toThrow(
           "already exists",
@@ -443,7 +452,7 @@ describe("BE-2-30: Organization, Property, Unit Services", () => {
 
         await expect(
           propertyService.findById("prop-999", "org-123"),
-        ).rejects.toThrow(NotFoundException);
+        ).rejects.toThrow(PropertyNotFoundException);
       });
 
       it("should enforce org-scoped isolation - different org cannot access property", async () => {
@@ -451,7 +460,7 @@ describe("BE-2-30: Organization, Property, Unit Services", () => {
 
         await expect(
           propertyService.findById("prop-123", "org-999"),
-        ).rejects.toThrow(NotFoundException);
+        ).rejects.toThrow(PropertyNotFoundException);
 
         expect(mockPrisma.property.findFirst).toHaveBeenCalledWith({
           where: {
@@ -567,7 +576,7 @@ describe("BE-2-30: Organization, Property, Unit Services", () => {
         mockPrisma.property.findFirst.mockResolvedValue(null);
 
         await expect(unitService.create(dto as any, "org-123")).rejects.toThrow(
-          NotFoundException,
+          PropertyNotFoundException,
         );
         await expect(unitService.create(dto as any, "org-123")).rejects.toThrow(
           "Property",
@@ -667,7 +676,7 @@ describe("BE-2-30: Organization, Property, Unit Services", () => {
         mockPrisma.unit.create.mockRejectedValue(error);
 
         await expect(unitService.create(dto as any, "org-123")).rejects.toThrow(
-          ConflictException,
+          UnitNumberConflictException,
         );
         await expect(unitService.create(dto as any, "org-123")).rejects.toThrow(
           "already exists",
@@ -732,7 +741,7 @@ describe("BE-2-30: Organization, Property, Unit Services", () => {
 
         await expect(
           unitService.findById("unit-123", "org-999"),
-        ).rejects.toThrow(NotFoundException);
+        ).rejects.toThrow(UnitNotFoundException);
 
         expect(mockPrisma.unit.findFirst).toHaveBeenCalledWith({
           where: {
@@ -752,7 +761,7 @@ describe("BE-2-30: Organization, Property, Unit Services", () => {
 
         await expect(
           unitService.findById("unit-999", "org-123"),
-        ).rejects.toThrow(NotFoundException);
+        ).rejects.toThrow(UnitNotFoundException);
       });
     });
 
@@ -813,7 +822,7 @@ describe("BE-2-30: Organization, Property, Unit Services", () => {
 
         await expect(
           unitService.update("unit-123", "org-999", {} as any),
-        ).rejects.toThrow(NotFoundException);
+        ).rejects.toThrow(UnitNotFoundException);
       });
     });
 
@@ -865,7 +874,7 @@ describe("BE-2-30: Organization, Property, Unit Services", () => {
         mockPrisma.unit.findFirst.mockResolvedValue(null);
 
         await expect(unitService.remove("unit-123", "org-999")).rejects.toThrow(
-          NotFoundException,
+          UnitNotFoundException,
         );
       });
     });
@@ -969,7 +978,7 @@ describe("BE-2-30: Organization, Property, Unit Services", () => {
       mockPrisma.organization.create.mockRejectedValue(error);
 
       await expect(organizationService.create(dto)).rejects.toThrow(
-        ConflictException,
+        OrganizationCodeConflictException,
       );
     });
 
@@ -1002,7 +1011,7 @@ describe("BE-2-30: Organization, Property, Unit Services", () => {
         propertyService.update("prop-123", "org-123", {
           name: "Updated Property",
         } as any),
-      ).rejects.toThrow(NotFoundException);
+      ).rejects.toThrow(PropertyNotFoundException);
     });
 
     it("should convert P2025 error to NotFoundException in UnitService", async () => {
@@ -1050,7 +1059,7 @@ describe("BE-2-30: Organization, Property, Unit Services", () => {
         unitService.update("unit-123", "org-123", {
           status: UnitStatus.OCCUPIED,
         } as any),
-      ).rejects.toThrow(NotFoundException);
+      ).rejects.toThrow(UnitNotFoundException);
     });
   });
 

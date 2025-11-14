@@ -1,14 +1,12 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-} from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { Organization, Prisma } from "@prisma/client";
 import { CreateOrganizationDto } from "./dto/create-organization.dto";
 import { UpdateOrganizationDto } from "./dto/update-organization.dto";
 import { QueryOrganizationDto } from "./dto/query-organization.dto";
 import { Paginated, createPaginatedResult } from "../../common/pagination";
+import { OrganizationNotFoundException } from "../../common/errors/not-found.exception";
+import { OrganizationCodeConflictException } from "../../common/errors/conflict.exception";
 
 @Injectable()
 export class OrganizationService {
@@ -30,9 +28,7 @@ export class OrganizationService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2002"
       ) {
-        throw new ConflictException(
-          `Organization with code "${dto.code}" already exists`,
-        );
+        throw new OrganizationCodeConflictException(dto.code);
       }
       throw error;
     }
@@ -44,7 +40,7 @@ export class OrganizationService {
     });
 
     if (!organization) {
-      throw new NotFoundException(`Organization with id "${id}" not found`);
+      throw new OrganizationNotFoundException(id);
     }
 
     return organization;
@@ -93,7 +89,7 @@ export class OrganizationService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === "P2025"
       ) {
-        throw new NotFoundException(`Organization with id "${id}" not found`);
+        throw new OrganizationNotFoundException(id);
       }
       throw error;
     }
