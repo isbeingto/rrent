@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, IsUUID } from "class-validator";
+import { IsDateString, IsNotEmpty, IsOptional, IsString, IsUUID } from "class-validator";
 import { PaginationQueryDto } from "../../../common/pagination";
 
 export class QueryPropertyDto extends PaginationQueryDto {
@@ -17,4 +17,12 @@ export class QueryPropertyDto extends PaginationQueryDto {
   @IsString()
   @IsOptional()
   city?: string;
+
+  @IsDateString()
+  @IsOptional()
+  dateStart?: string;
+
+  @IsDateString()
+  @IsOptional()
+  dateEnd?: string;
 }

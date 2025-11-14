@@ -5,6 +5,7 @@ import { CreateOrganizationDto } from "./dto/create-organization.dto";
 import { UpdateOrganizationDto } from "./dto/update-organization.dto";
 import { QueryOrganizationDto } from "./dto/query-organization.dto";
 import { Paginated, createPaginatedResult } from "../../common/pagination";
+import { ListQuery } from "../../common/query-parser";
 import { OrganizationNotFoundException } from "../../common/errors/not-found.exception";
 import { OrganizationCodeConflictException } from "../../common/errors/conflict.exception";
 
@@ -47,9 +48,11 @@ export class OrganizationService {
   }
 
   async findMany(
+    listQuery: ListQuery,
     query: QueryOrganizationDto,
   ): Promise<Paginated<Organization>> {
-    const { page = 1, limit = 20, keyword } = query;
+    const { page, pageSize, sort, order } = listQuery;
+    const { keyword, dateStart, dateEnd } = query;
 
     const where: Prisma.OrganizationWhereInput = {};
     if (keyword) {
@@ -59,17 +62,37 @@ export class OrganizationService {
       ];
     }
 
+    if (dateStart || dateEnd) {
+      where.createdAt = {};
+      if (dateStart) {
+        where.createdAt.gte = new Date(dateStart);
+      }
+      if (dateEnd) {
+        where.createdAt.lte = new Date(dateEnd);
+      }
+    }
+
+    const defaultOrder: Prisma.OrganizationOrderByWithRelationInput = {
+      createdAt: "desc",
+    };
+
+    const orderBy = sort
+      ? ({
+          [sort]: order ?? "asc",
+        } as Prisma.OrganizationOrderByWithRelationInput)
+      : defaultOrder;
+
     const [items, total] = await this.prisma.$transaction([
       this.prisma.organization.findMany({
         where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        orderBy,
       }),
       this.prisma.organization.count({ where }),
     ]);
 
-    return createPaginatedResult(items, total, page, limit);
+    return createPaginatedResult(items, total, page, pageSize);
   }
 
   async update(id: string, dto: UpdateOrganizationDto): Promise<Organization> {

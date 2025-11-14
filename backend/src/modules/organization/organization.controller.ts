@@ -10,8 +10,10 @@ import {
   Post,
   Put,
   Query,
+  Res,
   UseGuards,
 } from "@nestjs/common";
+import { Response } from "express";
 import { OrganizationService } from "./organization.service";
 import { CreateOrganizationDto } from "./dto/create-organization.dto";
 import { UpdateOrganizationDto } from "./dto/update-organization.dto";
@@ -22,6 +24,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { OrgRole } from "@prisma/client";
+import { parseListQuery } from "../../common/query-parser";
 
 @Controller("organizations")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -32,8 +35,14 @@ export class OrganizationController {
   @Roles(OrgRole.OWNER, OrgRole.PROPERTY_MGR)
   async findAll(
     @Query() query: QueryOrganizationDto,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<Paginated<Organization>> {
-    return this.organizationService.findMany(query);
+    const listQuery = parseListQuery(
+      query as unknown as Record<string, unknown>,
+    );
+    const result = await this.organizationService.findMany(listQuery, query);
+    res.setHeader('X-Total-Count', result.meta.total.toString());
+    return result;
   }
 
   @Get(":id")

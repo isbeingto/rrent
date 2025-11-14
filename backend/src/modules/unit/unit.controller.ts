@@ -10,8 +10,10 @@ import {
   Post,
   Put,
   Query,
+  Res,
   UseGuards,
 } from "@nestjs/common";
+import { Response } from "express";
 import { UnitService } from "./unit.service";
 import { QueryUnitDto } from "./dto/query-unit.dto";
 import { CreateUnitDto } from "./dto/create-unit.dto";
@@ -22,6 +24,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { OrgRole } from "@prisma/client";
+import { parseListQuery } from "../../common/query-parser";
 
 @Controller("units")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -30,8 +33,16 @@ export class UnitController {
 
   @Get()
   @Roles(OrgRole.OWNER, OrgRole.PROPERTY_MGR, OrgRole.OPERATOR, OrgRole.STAFF)
-  async findAll(@Query() query: QueryUnitDto): Promise<Paginated<Unit>> {
-    return this.unitService.findMany(query);
+  async findAll(
+    @Query() query: QueryUnitDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<Paginated<Unit>> {
+    const listQuery = parseListQuery(
+      query as unknown as Record<string, unknown>,
+    );
+    const result = await this.unitService.findMany(listQuery, query);
+    res.setHeader('X-Total-Count', result.meta.total.toString());
+    return result;
   }
 
   @Get(":id")

@@ -1,4 +1,5 @@
 import {
+  IsDateString,
   IsOptional,
   IsString,
   IsUUID,
@@ -24,4 +25,12 @@ export class QueryUnitDto extends PaginationQueryDto {
   @IsString()
   @IsOptional()
   keyword?: string;
+
+  @IsDateString()
+  @IsOptional()
+  dateStart?: string;
+
+  @IsDateString()
+  @IsOptional()
+  dateEnd?: string;
 }

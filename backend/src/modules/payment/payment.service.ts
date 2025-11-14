@@ -5,6 +5,7 @@ import { CreatePaymentDto } from "./dto/create-payment.dto";
 import { UpdatePaymentDto } from "./dto/update-payment.dto";
 import { QueryPaymentDto } from "./dto/query-payment.dto";
 import { Paginated, createPaginatedResult } from "../../common/pagination";
+import { ListQuery } from "../../common/query-parser";
 import {
   LeaseNotFoundException,
   PaymentNotFoundException,
@@ -62,16 +63,12 @@ export class PaymentService {
     return payment;
   }
 
-  async findMany(query: QueryPaymentDto): Promise<Paginated<Payment>> {
-    const {
-      page = 1,
-      limit = 20,
-      organizationId,
-      leaseId,
-      status,
-      dueDateFrom,
-      dueDateTo,
-    } = query;
+  async findMany(
+    listQuery: ListQuery,
+    query: QueryPaymentDto,
+  ): Promise<Paginated<Payment>> {
+    const { page, pageSize, sort, order } = listQuery;
+    const { organizationId, leaseId, status, dueDateFrom, dueDateTo } = query;
 
     const where: Prisma.PaymentWhereInput = {
       organizationId,
@@ -95,17 +92,25 @@ export class PaymentService {
       }
     }
 
+    const defaultOrder: Prisma.PaymentOrderByWithRelationInput = {
+      dueDate: "asc",
+    };
+
+    const orderBy = sort
+      ? ({ [sort]: order ?? "asc" } as Prisma.PaymentOrderByWithRelationInput)
+      : defaultOrder;
+
     const [items, total] = await this.prisma.$transaction([
       this.prisma.payment.findMany({
         where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { dueDate: "asc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        orderBy,
       }),
       this.prisma.payment.count({ where }),
     ]);
 
-    return createPaginatedResult(items, total, page, limit);
+    return createPaginatedResult(items, total, page, pageSize);
   }
 
   async update(

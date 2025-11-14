@@ -5,6 +5,7 @@ import { CreateLeaseDto } from "./dto/create-lease.dto";
 import { UpdateLeaseDto } from "./dto/update-lease.dto";
 import { QueryLeaseDto } from "./dto/query-lease.dto";
 import { Paginated, createPaginatedResult } from "../../common/pagination";
+import { ListQuery } from "../../common/query-parser";
 import {
   OrganizationNotFoundException,
   LeaseNotFoundException,
@@ -57,16 +58,12 @@ export class LeaseService {
     return lease;
   }
 
-  async findMany(query: QueryLeaseDto): Promise<Paginated<Lease>> {
-    const {
-      page = 1,
-      limit = 20,
-      organizationId,
-      propertyId,
-      unitId,
-      tenantId,
-      status,
-    } = query;
+  async findMany(
+    listQuery: ListQuery,
+    query: QueryLeaseDto,
+  ): Promise<Paginated<Lease>> {
+    const { page, pageSize, sort, order } = listQuery;
+    const { organizationId, propertyId, unitId, tenantId, status, dateStart, dateEnd } = query;
 
     const where: Prisma.LeaseWhereInput = {
       organizationId,
@@ -88,17 +85,35 @@ export class LeaseService {
       where.status = status;
     }
 
+    if (dateStart || dateEnd) {
+      where.createdAt = {};
+      if (dateStart) {
+        where.createdAt.gte = new Date(dateStart);
+      }
+      if (dateEnd) {
+        where.createdAt.lte = new Date(dateEnd);
+      }
+    }
+
+    const defaultOrder: Prisma.LeaseOrderByWithRelationInput = {
+      createdAt: "desc",
+    };
+
+    const orderBy = sort
+      ? ({ [sort]: order ?? "asc" } as Prisma.LeaseOrderByWithRelationInput)
+      : defaultOrder;
+
     const [items, total] = await this.prisma.$transaction([
       this.prisma.lease.findMany({
         where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        orderBy,
       }),
       this.prisma.lease.count({ where }),
     ]);
 
-    return createPaginatedResult(items, total, page, limit);
+    return createPaginatedResult(items, total, page, pageSize);
   }
 
   async update(

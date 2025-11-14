@@ -10,8 +10,10 @@ import {
   Post,
   Put,
   Query,
+  Res,
   UseGuards,
 } from "@nestjs/common";
+import { Response } from "express";
 import { PropertyService } from "./property.service";
 import { CreatePropertyDto } from "./dto/create-property.dto";
 import { UpdatePropertyDto } from "./dto/update-property.dto";
@@ -22,6 +24,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { OrgRole } from "@prisma/client";
+import { parseListQuery } from "../../common/query-parser";
 
 @Controller("properties")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -32,8 +35,14 @@ export class PropertyController {
   @Roles(OrgRole.OWNER, OrgRole.PROPERTY_MGR, OrgRole.OPERATOR, OrgRole.STAFF)
   async findAll(
     @Query() query: QueryPropertyDto,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<Paginated<Property>> {
-    return this.propertyService.findMany(query);
+    const listQuery = parseListQuery(
+      query as unknown as Record<string, unknown>,
+    );
+    const result = await this.propertyService.findMany(listQuery, query);
+    res.setHeader('X-Total-Count', result.meta.total.toString());
+    return result;
   }
 
   @Get(":id")

@@ -5,6 +5,7 @@ import { CreatePropertyDto } from "./dto/create-property.dto";
 import { UpdatePropertyDto } from "./dto/update-property.dto";
 import { QueryPropertyDto } from "./dto/query-property.dto";
 import { Paginated, createPaginatedResult } from "../../common/pagination";
+import { ListQuery } from "../../common/query-parser";
 import {
   OrganizationNotFoundException,
   PropertyNotFoundException,
@@ -67,15 +68,12 @@ export class PropertyService {
     return property;
   }
 
-  async findMany(query: QueryPropertyDto): Promise<Paginated<Property>> {
-    const {
-      page = 1,
-      limit = 20,
-      organizationId,
-      propertyId,
-      keyword,
-      city,
-    } = query;
+  async findMany(
+    listQuery: ListQuery,
+    query: QueryPropertyDto,
+  ): Promise<Paginated<Property>> {
+    const { page, pageSize, sort, order } = listQuery;
+    const { organizationId, propertyId, keyword, city, dateStart, dateEnd } = query;
 
     const where: Prisma.PropertyWhereInput = {
       organizationId,
@@ -89,6 +87,7 @@ export class PropertyService {
       where.OR = [
         { name: { contains: keyword, mode: "insensitive" } },
         { code: { contains: keyword, mode: "insensitive" } },
+        { addressLine1: { contains: keyword, mode: "insensitive" } },
       ];
     }
 
@@ -96,17 +95,35 @@ export class PropertyService {
       where.city = { contains: city, mode: "insensitive" };
     }
 
+    if (dateStart || dateEnd) {
+      where.createdAt = {};
+      if (dateStart) {
+        where.createdAt.gte = new Date(dateStart);
+      }
+      if (dateEnd) {
+        where.createdAt.lte = new Date(dateEnd);
+      }
+    }
+
+    const defaultOrder: Prisma.PropertyOrderByWithRelationInput = {
+      createdAt: "desc",
+    };
+
+    const orderBy = sort
+      ? ({ [sort]: order ?? "asc" } as Prisma.PropertyOrderByWithRelationInput)
+      : defaultOrder;
+
     const [items, total] = await this.prisma.$transaction([
       this.prisma.property.findMany({
         where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        orderBy,
       }),
       this.prisma.property.count({ where }),
     ]);
 
-    return createPaginatedResult(items, total, page, limit);
+    return createPaginatedResult(items, total, page, pageSize);
   }
 
   async update(

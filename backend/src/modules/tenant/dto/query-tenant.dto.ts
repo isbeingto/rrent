@@ -1,6 +1,7 @@
 import { Type } from "class-transformer";
 import {
   IsBoolean,
+  IsDateString,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -25,4 +26,12 @@ export class QueryTenantDto extends PaginationQueryDto {
   @Type(() => Boolean)
   @IsBoolean()
   isActive?: boolean;
+
+  @IsDateString()
+  @IsOptional()
+  dateStart?: string;
+
+  @IsDateString()
+  @IsOptional()
+  dateEnd?: string;
 }

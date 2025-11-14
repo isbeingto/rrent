@@ -5,6 +5,7 @@ import { CreateTenantDto } from "./dto/create-tenant.dto";
 import { UpdateTenantDto } from "./dto/update-tenant.dto";
 import { QueryTenantDto } from "./dto/query-tenant.dto";
 import { Paginated, createPaginatedResult } from "../../common/pagination";
+import { ListQuery } from "../../common/query-parser";
 import {
   OrganizationNotFoundException,
   TenantNotFoundException,
@@ -59,15 +60,12 @@ export class TenantService {
     return tenant;
   }
 
-  async findMany(query: QueryTenantDto): Promise<Paginated<Tenant>> {
-    const {
-      page = 1,
-      limit = 20,
-      organizationId,
-      fullName,
-      keyword,
-      isActive,
-    } = query;
+  async findMany(
+    listQuery: ListQuery,
+    query: QueryTenantDto,
+  ): Promise<Paginated<Tenant>> {
+    const { page, pageSize, sort, order } = listQuery;
+    const { organizationId, fullName, keyword, isActive, dateStart, dateEnd } = query;
 
     const where: Prisma.TenantWhereInput = {
       organizationId,
@@ -95,21 +93,38 @@ export class TenantService {
       });
     }
 
+    if (dateStart || dateEnd) {
+      filters.push({
+        createdAt: {
+          ...(dateStart && { gte: new Date(dateStart) }),
+          ...(dateEnd && { lte: new Date(dateEnd) }),
+        },
+      });
+    }
+
     if (filters.length) {
       where.AND = filters;
     }
 
+    const defaultOrder: Prisma.TenantOrderByWithRelationInput = {
+      createdAt: "desc",
+    };
+
+    const orderBy = sort
+      ? ({ [sort]: order ?? "asc" } as Prisma.TenantOrderByWithRelationInput)
+      : defaultOrder;
+
     const [items, total] = await this.prisma.$transaction([
       this.prisma.tenant.findMany({
         where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        orderBy,
       }),
       this.prisma.tenant.count({ where }),
     ]);
 
-    return createPaginatedResult(items, total, page, limit);
+    return createPaginatedResult(items, total, page, pageSize);
   }
 
   async update(

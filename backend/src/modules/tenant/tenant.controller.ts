@@ -10,8 +10,10 @@ import {
   Post,
   Put,
   Query,
+  Res,
   UseGuards,
 } from "@nestjs/common";
+import { Response } from "express";
 import { TenantService } from "./tenant.service";
 import { CreateTenantDto } from "./dto/create-tenant.dto";
 import { UpdateTenantDto } from "./dto/update-tenant.dto";
@@ -22,6 +24,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { OrgRole } from "@prisma/client";
+import { parseListQuery } from "../../common/query-parser";
 
 @Controller("tenants")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -30,8 +33,16 @@ export class TenantController {
 
   @Get()
   @Roles(OrgRole.OWNER, OrgRole.PROPERTY_MGR, OrgRole.OPERATOR, OrgRole.STAFF)
-  async findAll(@Query() query: QueryTenantDto): Promise<Paginated<Tenant>> {
-    return this.tenantService.findMany(query);
+  async findAll(
+    @Query() query: QueryTenantDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<Paginated<Tenant>> {
+    const listQuery = parseListQuery(
+      query as unknown as Record<string, unknown>,
+    );
+    const result = await this.tenantService.findMany(listQuery, query);
+    res.setHeader('X-Total-Count', result.meta.total.toString());
+    return result;
   }
 
   @Get(":id")

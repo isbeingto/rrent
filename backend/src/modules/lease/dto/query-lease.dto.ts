@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsUUID } from "class-validator";
+import { IsDateString, IsEnum, IsNotEmpty, IsOptional, IsUUID } from "class-validator";
 import { PaginationQueryDto } from "../../../common/pagination";
 import { LeaseStatus } from "@prisma/client";
 
@@ -22,4 +22,12 @@ export class QueryLeaseDto extends PaginationQueryDto {
   @IsEnum(LeaseStatus)
   @IsOptional()
   status?: LeaseStatus;
+
+  @IsDateString()
+  @IsOptional()
+  dateStart?: string;
+
+  @IsDateString()
+  @IsOptional()
+  dateEnd?: string;
 }
