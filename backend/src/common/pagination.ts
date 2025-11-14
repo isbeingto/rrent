@@ -53,7 +53,7 @@ export function createPaginatedResult<T>(
   page: number,
   limit: number,
 ): Paginated<T> {
-  const pageCount = Math.ceil(total / limit) || 1;
+  const pageCount = total === 0 ? 0 : Math.ceil(total / limit);
 
   return {
     items,

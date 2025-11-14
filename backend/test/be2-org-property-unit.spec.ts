@@ -269,7 +269,7 @@ describe("BE-2-30: Organization, Property, Unit Services", () => {
 
         expect(result.items).toEqual([]);
         expect(result.meta.total).toBe(0);
-        expect(result.meta.pageCount).toBe(1);
+        expect(result.meta.pageCount).toBe(0);
       });
 
       it("should calculate correct pageCount", async () => {
@@ -1092,7 +1092,7 @@ describe("BE-2-30: Organization, Property, Unit Services", () => {
       expect(result.meta.page).toBe(1);
     });
 
-    it("should return pageCount of 1 for empty results", async () => {
+    it("should return pageCount of 0 for empty results", async () => {
       mockPrisma.$transaction.mockResolvedValue([[], 0]);
 
       const result = await organizationService.findMany({
@@ -1100,7 +1100,7 @@ describe("BE-2-30: Organization, Property, Unit Services", () => {
         limit: 20,
       });
 
-      expect(result.meta.pageCount).toBe(1);
+      expect(result.meta.pageCount).toBe(0);
     });
 
     it("should preserve all pagination metadata fields", async () => {
