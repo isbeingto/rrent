@@ -31,3 +31,12 @@ export class InvalidRelationException extends AppException {
     super(AppErrorCode.INVALID_RELATION, message, HttpStatus.BAD_REQUEST);
   }
 }
+
+/**
+ * 权限不足异常（角色权限不满足）
+ */
+export class ForbiddenByRoleException extends AppException {
+  constructor(message = "Access denied: insufficient role") {
+    super(AppErrorCode.FORBIDDEN, message, HttpStatus.FORBIDDEN);
+  }
+}

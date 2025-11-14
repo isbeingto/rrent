@@ -231,7 +231,156 @@ bash tools/verify_be2_all.sh
 
 ---
 
+## 🔒 CORS 配置指南 (BE-4-43)
+
+### 环境变量设置
+
+**变量**: `CORS_ALLOWED_ORIGINS`
+
+格式为逗号分隔的域名列表，例如：
+
+```env
+# 开发环境
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,http://localhost:3001
+
+# 生产环境
+CORS_ALLOWED_ORIGINS=https://app.rrent.com,https://admin.rrent.com
+```
+
+### 行为差异
+
+**开发环境** (`NODE_ENV !== 'production'`)
+- 若未设置 `CORS_ALLOWED_ORIGINS`，默认允许：
+  - `http://localhost:3000`
+  - `http://localhost:5173`
+  - `http://localhost:3001`
+- 允许无 Origin 的请求（curl、Postman、服务端调用）
+
+**生产环境** (`NODE_ENV === 'production'`)
+- **必须**设置 `CORS_ALLOWED_ORIGINS`
+- 若未设置，服务启动时抛出错误并退出 (`process.exit(1)`)
+- 严格按白名单匹配，拒绝非白名单 Origin（返回 CORS 错误）
+- 日志记录被拒绝的 Origin
+
+### 常见问题
+
+**Q: 前端本地域名改了，如何解决 CORS 失败？**  
+A: 修改 `.env` 文件中的 `CORS_ALLOWED_ORIGINS`，添加新域名，重启后台服务。
+
+**Q: 生产环境忘记配置 CORS_ALLOWED_ORIGINS 怎么办？**  
+A: 后端启动时会报错并拒绝启动，防止误配导致"裸奔"。检查 `.env` 或部署配置，补充环境变量。
+
+**Q: 为什么 curl 请求可以跳过 CORS 限制？**  
+A: 因为 curl 没有 Origin 请求头，浏览器才需要 CORS。后端允许这类请求便于测试和调试。
+
+---
+
+## 🚦 Rate Limit 配置指南 (BE-4-44)
+
+### 环境变量设置
+
+**变量**: `LOGIN_RATE_LIMIT`, `LOGIN_RATE_TTL`
+
+```env
+# 每 60 秒允许最多 5 次登录尝试
+LOGIN_RATE_LIMIT=5
+LOGIN_RATE_TTL=60
+```
+
+### 限流行为
+
+**登录接口** (`POST /auth/login`)
+- 同一 IP 在时间窗口内超过限制次数，返回 429 错误
+- 窗口重置后可重新尝试
+- 非浏览器请求（无 Origin）不受 CORS 限制，但仍受速率限制
+
+### 错误响应格式
+
+当触发速率限制时（429）：
+
+```json
+{
+  "statusCode": 429,
+  "error": "TooManyRequestsException",
+  "message": "Too many attempts, please try again later.",
+  "code": "AUTH_RATE_LIMITED"
+}
+```
+
+### 常见问题
+
+**Q: 如何调整登录速率限制？**  
+A: 修改 `.env` 中的 `LOGIN_RATE_LIMIT` 和 `LOGIN_RATE_TTL` 值，重启后台。
+
+**Q: 某个用户被误伤（暂时被限流），怎样快速恢复？**  
+A: 等待 `LOGIN_RATE_TTL` 秒后重试，或临时调宽限制参数。
+
+**Q: 限流是按 IP 还是按账号？**  
+A: 目前按 IP 维度，与多租户解耦。未来若需按账号/Email 限流，需单独任务实现。
+
+---
+
+---
+
+## ✅ BE-Phase1（BE-0..BE-4）统一验收
+
+在 backend 目录执行以下命令进行完整的阶段性验收：
+
+```bash
+bash tools/verify_be_phase1_all.sh
+```
+
+### 验收范围
+
+脚本会自动执行以下所有步骤，中途任一步失败则立即停止：
+
+1. **环境检查**：验证 Node.js、pnpm、DATABASE_URL 配置
+2. **代码质量**：执行 `pnpm run lint` 和 `pnpm run build`
+3. **数据库**：Prisma 验证、迁移、种子脚本
+4. **服务启动**：启动 Nest.js 应用并探测健康检查
+5. **基础 API**：验证 GET / 、GET /health 、GET /api 响应
+6. **领域服务**：调用 BE-2 服务统一验收（如果脚本存在）
+7. **认证流程**：调用 BE-4 Auth 烟囱验证（如果脚本存在）
+8. **业务接口**：使用 JWT Token 调用 GET /organizations，验证认证和授权
+
+### 预期输出
+
+成功时终端会显示：
+
+```text
+╔════════════════════════════════════════════════════════════════╗
+║  ✅ BE-Phase1 (BE-0..BE-4) 验收通过                            ║
+╚════════════════════════════════════════════════════════════════╝
+```
+
+脚本退出码为 0。
+
+### 失败诊断
+
+若任一步失败，脚本会：
+- 打印清晰的错误信息和失败步骤名称
+- 显示退出码非 0
+- 自动清理后台服务进程
+
+常见失败原因：
+- 数据库连接问题：检查 `DATABASE_URL` 和 PostgreSQL 是否运行
+- 编译或 Lint 错误：查看具体报错信息并修复代码
+- 服务启动失败：检查 `/tmp/be_phase1_server.log` 日志文件
+- JWT 验证失败：确保 `/auth/login` 和 `/auth/me` 端点正确实现
+
+### 脚本位置
+
+```
+backend/tools/verify_be_phase1_all.sh
+```
+
+---
+
 **更新日期**: 2024-11-14  
-**版本**: 1.0
+**版本**: 1.1
+
+```
+
+````
 
 ```

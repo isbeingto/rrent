@@ -7,6 +7,7 @@ import {
 } from "@nestjs/common";
 import { Response } from "express";
 import { AppException } from "../errors/app-exception.base";
+import { AppErrorCode } from "../errors/app-error-code.enum";
 
 interface ErrorResponse {
   statusCode: number;
@@ -71,6 +72,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
         if (res.code) {
           errorResponse.code = res.code;
         }
+      }
+
+      // Handle ThrottlerException (429 - Too Many Requests)
+      if (status === HttpStatus.TOO_MANY_REQUESTS) {
+        errorResponse.code = AppErrorCode.AUTH_RATE_LIMITED;
+        errorResponse.message = "Too many attempts, please try again later.";
       }
     } else if (exception instanceof Error) {
       // Log the actual error for debugging

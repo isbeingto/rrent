@@ -10,6 +10,7 @@ import {
   Post,
   Put,
   Query,
+  UseGuards,
 } from "@nestjs/common";
 import { OrganizationService } from "./organization.service";
 import { CreateOrganizationDto } from "./dto/create-organization.dto";
@@ -17,12 +18,18 @@ import { UpdateOrganizationDto } from "./dto/update-organization.dto";
 import { QueryOrganizationDto } from "./dto/query-organization.dto";
 import { Organization } from "@prisma/client";
 import { Paginated } from "../../common/pagination";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RolesGuard } from "../../common/guards/roles.guard";
+import { Roles } from "../../common/decorators/roles.decorator";
+import { OrgRole } from "@prisma/client";
 
 @Controller("organizations")
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class OrganizationController {
   constructor(private readonly organizationService: OrganizationService) {}
 
   @Get()
+  @Roles(OrgRole.OWNER, OrgRole.PROPERTY_MGR)
   async findAll(
     @Query() query: QueryOrganizationDto,
   ): Promise<Paginated<Organization>> {
@@ -30,6 +37,7 @@ export class OrganizationController {
   }
 
   @Get(":id")
+  @Roles(OrgRole.OWNER, OrgRole.PROPERTY_MGR)
   async findOne(
     @Param("id", new ParseUUIDPipe()) id: string,
   ): Promise<Organization> {
@@ -37,11 +45,13 @@ export class OrganizationController {
   }
 
   @Post()
+  @Roles(OrgRole.OWNER)
   async create(@Body() dto: CreateOrganizationDto): Promise<Organization> {
     return this.organizationService.create(dto);
   }
 
   @Put(":id")
+  @Roles(OrgRole.OWNER)
   async update(
     @Param("id", new ParseUUIDPipe()) id: string,
     @Body() dto: UpdateOrganizationDto,
@@ -51,6 +61,7 @@ export class OrganizationController {
 
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(OrgRole.OWNER)
   async remove(@Param("id", new ParseUUIDPipe()) id: string): Promise<void> {
     await this.organizationService.remove(id);
   }
