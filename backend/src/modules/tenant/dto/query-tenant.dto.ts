@@ -1,4 +1,11 @@
-import { IsNotEmpty, IsOptional, IsString, IsUUID } from "class-validator";
+import { Type } from "class-transformer";
+import {
+  IsBoolean,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from "class-validator";
 import { PaginationQueryDto } from "../../../common/pagination";
 
 export class QueryTenantDto extends PaginationQueryDto {
@@ -13,4 +20,9 @@ export class QueryTenantDto extends PaginationQueryDto {
   @IsString()
   @IsOptional()
   keyword?: string;
+
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  isActive?: boolean;
 }

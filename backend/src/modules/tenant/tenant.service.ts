@@ -60,13 +60,24 @@ export class TenantService {
   }
 
   async findMany(query: QueryTenantDto): Promise<Paginated<Tenant>> {
-    const { page = 1, limit = 20, organizationId, fullName, keyword } = query;
+    const {
+      page = 1,
+      limit = 20,
+      organizationId,
+      fullName,
+      keyword,
+      isActive,
+    } = query;
 
     const where: Prisma.TenantWhereInput = {
       organizationId,
     };
 
     const filters: Prisma.TenantWhereInput[] = [];
+
+    if (typeof isActive === "boolean") {
+      where.isActive = isActive;
+    }
 
     if (fullName) {
       filters.push({

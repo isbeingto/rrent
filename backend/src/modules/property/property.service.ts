@@ -77,11 +77,9 @@ export class PropertyService {
       city,
     } = query;
 
-    const where: Prisma.PropertyWhereInput = {};
-
-    if (organizationId) {
-      where.organizationId = organizationId;
-    }
+    const where: Prisma.PropertyWhereInput = {
+      organizationId,
+    };
 
     if (propertyId) {
       where.id = propertyId;

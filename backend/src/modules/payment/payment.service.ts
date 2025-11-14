@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
-import { Payment, Prisma } from "@prisma/client";
+import { Payment, PaymentStatus, Prisma } from "@prisma/client";
 import { CreatePaymentDto } from "./dto/create-payment.dto";
 import { UpdatePaymentDto } from "./dto/update-payment.dto";
 import { QueryPaymentDto } from "./dto/query-payment.dto";
@@ -9,22 +9,25 @@ import {
   LeaseNotFoundException,
   PaymentNotFoundException,
 } from "../../common/errors/not-found.exception";
+import { CrossOrgAccessException } from "../../common/errors/forbidden.exception";
 
 @Injectable()
 export class PaymentService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreatePaymentDto): Promise<Payment> {
-    // Validate lease exists and belongs to organization
-    const lease = await this.prisma.lease.findFirst({
-      where: {
-        id: dto.leaseId,
-        organizationId: dto.organizationId,
-      },
+    const lease = await this.prisma.lease.findUnique({
+      where: { id: dto.leaseId },
     });
 
     if (!lease) {
       throw new LeaseNotFoundException(dto.leaseId);
+    }
+
+    if (lease.organizationId !== dto.organizationId) {
+      throw new CrossOrgAccessException(
+        "Cannot access leases from another organization",
+      );
     }
 
     return await this.prisma.payment.create({
@@ -32,9 +35,9 @@ export class PaymentService {
         organizationId: dto.organizationId,
         leaseId: dto.leaseId,
         type: dto.type,
-        status: dto.status,
+        status: dto.status ?? PaymentStatus.PENDING,
         amount: dto.amount,
-        currency: dto.currency,
+        currency: dto.currency ?? "CNY",
         dueDate: dto.dueDate,
         method: dto.method,
         paidAt: dto.paidAt,
@@ -60,14 +63,36 @@ export class PaymentService {
   }
 
   async findMany(query: QueryPaymentDto): Promise<Paginated<Payment>> {
-    const { page = 1, limit = 20, organizationId, status } = query;
+    const {
+      page = 1,
+      limit = 20,
+      organizationId,
+      leaseId,
+      status,
+      dueDateFrom,
+      dueDateTo,
+    } = query;
 
     const where: Prisma.PaymentWhereInput = {
       organizationId,
     };
 
+    if (leaseId) {
+      where.leaseId = leaseId;
+    }
+
     if (status) {
       where.status = status;
+    }
+
+    if (dueDateFrom || dueDateTo) {
+      where.dueDate = {};
+      if (dueDateFrom) {
+        where.dueDate.gte = new Date(dueDateFrom);
+      }
+      if (dueDateTo) {
+        where.dueDate.lte = new Date(dueDateTo);
+      }
     }
 
     const [items, total] = await this.prisma.$transaction([
@@ -75,7 +100,7 @@ export class PaymentService {
         where,
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: { createdAt: "desc" },
+        orderBy: { dueDate: "asc" },
       }),
       this.prisma.payment.count({ where }),
     ]);
