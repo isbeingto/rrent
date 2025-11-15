@@ -1,0 +1,158 @@
+# =============================================================================
+# Docker Compose - Production Environment
+# =============================================================================
+# Purpose: Production-ready deployment configuration
+# Services: Backend (NestJS) + PostgreSQL Database
+# Usage: docker compose -f infra/docker-compose.yml up -d
+# Security: Ensure .env file is properly secured and not committed to Git
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database - Production
+  # ---------------------------------------------------------------------------
+  rrent-postgres:
+    image: postgres:16-alpine
+    container_name: rrent-postgres-prod
+    restart: always
+    
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # Timezone
+      TZ: ${TZ:-Asia/Shanghai}
+      PGTZ: ${TZ:-Asia/Shanghai}
+      # Performance tuning
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    
+    # Only expose to backend via internal network (more secure)
+    # Uncomment below if you need direct external access
+    # ports:
+    #   - "5432:5432"
+    
+    volumes:
+      # Persistent data volume - CRITICAL: Must be backed up!
+      - rrent-pgdata:/var/lib/postgresql/data
+      # Optional: Custom PostgreSQL configuration
+      # - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    
+    networks:
+      - rrent-net
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    
+    # Security: Run as non-root user
+    user: postgres
+    
+    # Resource limits (adjust based on your server capacity)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # ---------------------------------------------------------------------------
+  # Backend Service - Production
+  # ---------------------------------------------------------------------------
+  rrent-backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      target: runtime
+    image: rrent-backend:${APP_VERSION:-latest}
+    container_name: rrent-backend-prod
+    restart: always
+    
+    # Load environment variables from .env file
+    env_file:
+      - .env
+    
+    environment:
+      # Override NODE_ENV to production
+      NODE_ENV: production
+      # Use internal Docker network for database connection
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@rrent-postgres:5432/${POSTGRES_DB}
+      PORT: 3000
+    
+    ports:
+      # Map to port 3000 on host (use Nginx reverse proxy in front)
+      - "${APP_PORT:-3000}:3000"
+    
+    networks:
+      - rrent-net
+    
+    depends_on:
+      rrent-postgres:
+        condition: service_healthy
+    
+    # Run database migrations before starting the application
+    command: >
+      sh -c "
+        echo '🔄 Waiting for database to be fully ready...' &&
+        sleep 5 &&
+        echo '🔄 Running database migrations...' &&
+        npx prisma migrate deploy &&
+        echo '✅ Migrations completed successfully!' &&
+        echo '🚀 Starting NestJS application in production mode...' &&
+        node dist/main
+      "
+    
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health/ready', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); })"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    # Resource limits (adjust based on your application needs)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    
+    # Security: Read-only root filesystem (uncomment if compatible)
+    # read_only: true
+    # tmpfs:
+    #   - /tmp
+    
+    # Optional: Mount logs to host for persistent logging
+    volumes:
+      - ./logs:/app/logs:rw
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  rrent-net:
+    name: rrent-net
+    driver: bridge
+    # Optional: Use custom subnet
+    # ipam:
+    #   config:
+    #     - subnet: 172.20.0.0/16
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  rrent-pgdata:
+    name: rrent-pgdata
+    driver: local
+    # CRITICAL: This volume contains production data
+    # Implement regular backup strategy (see BE_8_DOCKER_COMPOSE.md)
+    # Location: /var/lib/docker/volumes/rrent-pgdata/_data

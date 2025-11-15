@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
-import { ThrottlerModule } from "@nestjs/throttler";
+import { APP_GUARD } from "@nestjs/core";
+import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { HealthModule } from "./health/health.module";
@@ -16,16 +17,20 @@ import { PaymentModule } from "./modules/payment/payment.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { SchedulerModule } from "./scheduler/scheduler.module";
 
+const envFiles = [".env"];
+if (process.env.NODE_ENV) {
+  envFiles.unshift(`.env.${process.env.NODE_ENV}`);
+}
+
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ".env",
+      envFilePath: envFiles,
     }),
     ThrottlerModule.forRoot({
       throttlers: [
         {
-          name: "global",
           ttl: 60_000, // 60 seconds
           limit: 100, // 100 requests per window
         },
@@ -45,6 +50,12 @@ import { SchedulerModule } from "./scheduler/scheduler.module";
     SchedulerModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

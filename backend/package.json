@@ -15,9 +15,13 @@
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
-    "test:auth-smoke": "jest --runTestsByPath test/auth-smoke.e2e-spec.ts",
+    "test:auth-smoke": "jest --runTestsByPath test/auth-login.e2e-spec.ts",
+    "test:create-chain": "jest --runTestsByPath test/create-chain.e2e-spec.ts",
     "test:be2-services": "jest --runTestsByPath test/be2-org-property-unit.spec.ts",
-    "test:be2-services-2": "jest --runTestsByPath test/be2-tenant-lease-payment.spec.ts"
+    "test:be2-services-2": "jest --runTestsByPath test/be2-tenant-lease-payment.spec.ts",
+    "test:payment-flow": "jest --runTestsByPath test/payment-flow.e2e-spec.ts",
+    "test:pagination": "NODE_ENV=test jest --runTestsByPath test/pagination.e2e-spec.ts",
+    "test:cov": "NODE_ENV=test jest --coverage"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.1",

@@ -1,0 +1,122 @@
+# =============================================================================
+# Docker Compose - Development Environment
+# =============================================================================
+# Purpose: Local development environment with hot-reload support
+# Services: Backend (NestJS) + PostgreSQL Database
+# Usage: docker compose -f infra/docker-compose.dev.yml up -d
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database - Development
+  # ---------------------------------------------------------------------------
+  rrent-postgres:
+    image: postgres:16-alpine
+    container_name: rrent-postgres-dev
+    restart: unless-stopped
+    
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-rrent_dev}
+      POSTGRES_USER: ${POSTGRES_USER:-rrent_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rrent_dev_password}
+      POSTGRES_HOST_AUTH_METHOD: trust
+      # Timezone
+      TZ: Asia/Shanghai
+      PGTZ: Asia/Shanghai
+    
+    ports:
+      # Expose to host for direct access (e.g., psql, DBeaver)
+      - "5432:5432"
+    
+    volumes:
+      # Persistent data volume
+      - rrent-pgdata-dev:/var/lib/postgresql/data
+      # Optional: Custom init scripts
+      # - ./postgres/init:/docker-entrypoint-initdb.d
+    
+    networks:
+      - rrent-dev-net
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rrent_user} -d ${POSTGRES_DB:-rrent_dev}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # Backend Service - Development
+  # ---------------------------------------------------------------------------
+  rrent-backend-dev:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      target: runtime
+    image: rrent-backend:dev
+    container_name: rrent-backend-dev
+    restart: unless-stopped
+    
+    # Use development environment variables
+    env_file:
+      - .env.dev
+    
+    environment:
+      # Override specific variables for Docker network
+      NODE_ENV: development
+      DATABASE_URL: postgresql://${POSTGRES_USER:-rrent_user}:${POSTGRES_PASSWORD:-rrent_dev_password}@rrent-postgres:5432/${POSTGRES_DB:-rrent_dev}
+      PORT: 3000
+    
+    ports:
+      - "3000:3000"
+    
+    # Optional: Mount source code for hot-reload (requires running dev server)
+    # Uncomment below for live development with nodemon/nest watch
+    # volumes:
+    #   - ../backend/src:/app/src:ro
+    #   - ../backend/prisma:/app/prisma:ro
+    
+    networks:
+      - rrent-dev-net
+    
+    depends_on:
+      rrent-postgres:
+        condition: service_healthy
+    
+    # Run migrations before starting the app
+    command: >
+      sh -c "
+        echo '🔄 Waiting for database to be ready...' &&
+        sleep 2 &&
+        echo '🔄 Running database migrations...' &&
+        npx prisma migrate deploy &&
+        echo '✅ Migrations completed!' &&
+        echo '🚀 Starting NestJS application...' &&
+        node dist/main
+      "
+    
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health/ready', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); })"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  rrent-dev-net:
+    name: rrent-dev-net
+    driver: bridge
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  rrent-pgdata-dev:
+    name: rrent-pgdata-dev
+    driver: local
+    # Note: This is development data - NOT backed up automatically
+    # Use docker volume inspect rrent-pgdata-dev to locate data

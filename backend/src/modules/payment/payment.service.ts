@@ -179,6 +179,10 @@ export class PaymentService {
     }
 
     // 2. 验证状态：仅允许从 PENDING 或 OVERDUE 标记为 PAID
+    if (payment.status === PaymentStatus.PAID) {
+      return payment;
+    }
+
     if (
       payment.status !== PaymentStatus.PENDING &&
       payment.status !== PaymentStatus.OVERDUE

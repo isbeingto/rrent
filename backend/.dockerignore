@@ -1,0 +1,67 @@
+# Docker Build Context - Ignore unnecessary files
+# =============================================================================
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Dependencies
+node_modules
+
+# Build output
+dist
+build
+*.tsbuildinfo
+
+# Testing
+coverage
+test
+*.spec.ts
+*.e2e-spec.ts
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Documentation
+*.md
+!README.md
+docs
+
+# Scripts
+scripts
+tools
+*.sh
+
+# Misc
+.prettierrc
+.eslintrc.js
+.editorconfig
+jest.config.js
+tsconfig.spec.json
+
+# Project specific
+BE_*.md
+PROJECT_STATUS.md
+VERIFY_*.sh
+manual-flow-test*.sh
+test-be*.sh
+ERROR_CODE_VERIFICATION.md
