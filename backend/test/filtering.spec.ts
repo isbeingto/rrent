@@ -6,6 +6,7 @@ import { TenantService } from "../src/modules/tenant/tenant.service";
 import { LeaseService } from "../src/modules/lease/lease.service";
 import { PaymentService } from "../src/modules/payment/payment.service";
 import { PrismaService } from "../src/prisma/prisma.service";
+import { AuditLogService } from "../src/modules/audit-log/audit-log.service";
 import { LeaseStatus, PaymentStatus } from "@prisma/client";
 
 describe("BE-5-48: Filtering (keyword/status/date)", () => {
@@ -15,6 +16,7 @@ describe("BE-5-48: Filtering (keyword/status/date)", () => {
   let leaseService: LeaseService;
   let paymentService: PaymentService;
   let mockPrisma: any;
+  let mockAuditLogService: any;
 
   beforeEach(async () => {
     mockPrisma = {
@@ -41,6 +43,11 @@ describe("BE-5-48: Filtering (keyword/status/date)", () => {
       $transaction: jest.fn(),
     };
 
+    mockAuditLogService = {
+      log: jest.fn(),
+      logBatch: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrganizationService,
@@ -51,6 +58,10 @@ describe("BE-5-48: Filtering (keyword/status/date)", () => {
         {
           provide: PrismaService,
           useValue: mockPrisma,
+        },
+        {
+          provide: AuditLogService,
+          useValue: mockAuditLogService,
         },
       ],
     }).compile();

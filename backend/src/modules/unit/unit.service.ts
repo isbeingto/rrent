@@ -79,7 +79,8 @@ export class UnitService {
     query: QueryUnitDto,
   ): Promise<Paginated<Unit>> {
     const { page, pageSize, sort, order } = listQuery;
-    const { organizationId, propertyId, status, keyword, dateStart, dateEnd } = query;
+    const { organizationId, propertyId, status, keyword, dateStart, dateEnd } =
+      query;
 
     const where: Prisma.UnitWhereInput = {
       property: {
@@ -96,9 +97,7 @@ export class UnitService {
     }
 
     if (keyword) {
-      where.OR = [
-        { unitNumber: { contains: keyword, mode: "insensitive" } },
-      ];
+      where.OR = [{ unitNumber: { contains: keyword, mode: "insensitive" } }];
     }
 
     if (dateStart || dateEnd) {

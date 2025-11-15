@@ -14,6 +14,7 @@ import { TenantModule } from "./modules/tenant/tenant.module";
 import { LeaseModule } from "./modules/lease/lease.module";
 import { PaymentModule } from "./modules/payment/payment.module";
 import { AuthModule } from "./modules/auth/auth.module";
+import { SchedulerModule } from "./scheduler/scheduler.module";
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { AuthModule } from "./modules/auth/auth.module";
     LeaseModule,
     PaymentModule,
     AuthModule,
+    SchedulerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

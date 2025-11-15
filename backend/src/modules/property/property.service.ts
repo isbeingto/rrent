@@ -73,7 +73,8 @@ export class PropertyService {
     query: QueryPropertyDto,
   ): Promise<Paginated<Property>> {
     const { page, pageSize, sort, order } = listQuery;
-    const { organizationId, propertyId, keyword, city, dateStart, dateEnd } = query;
+    const { organizationId, propertyId, keyword, city, dateStart, dateEnd } =
+      query;
 
     const where: Prisma.PropertyWhereInput = {
       organizationId,

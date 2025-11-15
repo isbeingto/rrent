@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,10 +7,199 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/**
- * 组织隔离与角色枚举
- * 用于后续 Tenant/Org/User 之间的权限与视图隔离
- */
+/// *
+/// * 多租户隔离的核心实体
+/// * 代表一个物业公司 / 运营方 / 房源管理主体
+model Organization {
+  id          String     @id @default(uuid())
+  name        String
+  code        String     @unique
+  description String?
+  timezone    String     @default("Asia/Shanghai")
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  auditLogs   AuditLog[]
+  leases      Lease[]
+  payments    Payment[]
+  properties  Property[]
+  tenants     Tenant[]
+  users       User[]
+
+  @@index([name])
+}
+
+/// *
+/// * 公寓/楼盘/小区资产项目
+/// * 每个 Organization 下可以有多个 Property
+model Property {
+  id             String       @id @default(uuid())
+  organizationId String
+  name           String
+  code           String
+  description    String?
+  addressLine1   String?
+  addressLine2   String?
+  city           String?
+  state          String?
+  postalCode     String?
+  country        String?      @default("CN")
+  timezone       String       @default("Asia/Shanghai")
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  leases         Lease[]
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  units          Unit[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId, name])
+}
+
+/// *
+/// * 具体房源单元/房间
+/// * 每个 Property 下可以有多个 Unit
+model Unit {
+  id         String     @id @default(uuid())
+  propertyId String
+  name       String?
+  unitNumber String
+  floor      Int?
+  bedrooms   Int?
+  bathrooms  Int?
+  areaSqm    Float?
+  status     UnitStatus @default(VACANT)
+  isActive   Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  leases     Lease[]
+  property   Property   @relation(fields: [propertyId], references: [id])
+
+  @@unique([propertyId, unitNumber])
+  @@index([propertyId, status])
+}
+
+/// *
+/// * 租客/承租人实体
+/// * 每个 Tenant 属于一个 Organization
+model Tenant {
+  id             String       @id @default(uuid())
+  organizationId String
+  fullName       String
+  email          String?
+  phone          String?
+  idNumber       String?
+  notes          String?
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  leases         Lease[]
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, email])
+  @@unique([organizationId, phone])
+  @@index([organizationId, fullName])
+}
+
+/// *
+/// * 租约/合同核心业务实体
+/// * 关联 Organization、Property、Unit、Tenant
+model Lease {
+  id             String       @id @default(uuid())
+  organizationId String
+  propertyId     String
+  unitId         String
+  tenantId       String
+  status         LeaseStatus  @default(PENDING)
+  billCycle      BillCycle    @default(MONTHLY)
+  startDate      DateTime
+  endDate        DateTime?
+  rentAmount     Decimal      @db.Decimal(10, 2)
+  currency       String       @default("CNY")
+  depositAmount  Decimal?     @db.Decimal(10, 2)
+  notes          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  property       Property     @relation(fields: [propertyId], references: [id])
+  tenant         Tenant       @relation(fields: [tenantId], references: [id])
+  unit           Unit         @relation(fields: [unitId], references: [id])
+  payments       Payment[]
+
+  @@index([unitId, status])
+  @@index([organizationId, status])
+  @@index([tenantId, status])
+}
+
+/// *
+/// * 支付/账单记录
+/// * 代表租约上的一条账单或一笔应付/实付记录
+model Payment {
+  id             String         @id @default(uuid())
+  organizationId String
+  leaseId        String
+  type           BillType
+  status         PaymentStatus  @default(PENDING)
+  method         PaymentMethod?
+  amount         Decimal        @db.Decimal(10, 2)
+  currency       String         @default("CNY")
+  dueDate        DateTime
+  paidAt         DateTime?
+  externalRef    String?
+  notes          String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  lease          Lease          @relation(fields: [leaseId], references: [id])
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, status, dueDate])
+  @@index([leaseId, status])
+}
+
+/// *
+/// * 系统用户（登录用户）
+/// * 与 Tenant（租客）分开，代表管理员/员工等
+model User {
+  id             String       @id @default(uuid())
+  organizationId String
+  email          String       @unique
+  passwordHash   String
+  fullName       String?
+  role           OrgRole      @default(STAFF)
+  isActive       Boolean      @default(true)
+  lastLoginAt    DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  auditLogs      AuditLog[]
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, role])
+}
+
+/// *
+/// * 审计日志
+/// * 记录系统操作的可追溯性记录
+model AuditLog {
+  id             String       @id @default(uuid())
+  organizationId String
+  userId         String?
+  entity         String
+  entityId       String?
+  action         String
+  ip             String?
+  userAgent      String?
+  metadata       Json?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  user           User?        @relation(fields: [userId], references: [id])
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, entity, entityId])
+}
+
+/// *
+/// * 组织隔离与角色枚举
+/// * 用于后续 Tenant/Org/User 之间的权限与视图隔离
 enum OrgRole {
   OWNER
   PROPERTY_MGR
@@ -24,9 +207,8 @@ enum OrgRole {
   STAFF
 }
 
-/**
- * 房源/单元状态
- */
+/// *
+/// * 房源/单元状态
 enum UnitStatus {
   VACANT
   RESERVED
@@ -35,9 +217,8 @@ enum UnitStatus {
   OFFLINE
 }
 
-/**
- * 租约状态
- */
+/// *
+/// * 租约状态
 enum LeaseStatus {
   DRAFT
   PENDING
@@ -46,9 +227,8 @@ enum LeaseStatus {
   EXPIRED
 }
 
-/**
- * 账单类型（按费用种类）
- */
+/// *
+/// * 账单类型（按费用种类）
 enum BillType {
   RENT
   DEPOSIT
@@ -58,9 +238,8 @@ enum BillType {
   OTHER
 }
 
-/**
- * 账单周期（按出账频率）
- */
+/// *
+/// * 账单周期（按出账频率）
 enum BillCycle {
   ONE_TIME
   MONTHLY
@@ -68,9 +247,8 @@ enum BillCycle {
   YEARLY
 }
 
-/**
- * 支付状态
- */
+/// *
+/// * 支付状态
 enum PaymentStatus {
   PENDING
   PARTIAL
@@ -79,252 +257,11 @@ enum PaymentStatus {
   CANCELED
 }
 
-/**
- * 支付方式
- */
+/// *
+/// * 支付方式
 enum PaymentMethod {
   CASH
   BANK_TRANSFER
   CARD
   ONLINE
-}
-
-/**
- * 多租户隔离的核心实体
- * 代表一个物业公司 / 运营方 / 房源管理主体
- */
-model Organization {
-  id          String  @id @default(uuid())
-  name        String
-  code        String  @unique
-  description String? @db.Text
-
-  timezone String  @default("Asia/Shanghai")
-  isActive Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  properties Property[]
-  tenants    Tenant[]
-  leases     Lease[]
-  payments   Payment[]
-  users      User[]
-  auditLogs  AuditLog[]
-
-  @@index([name])
-}
-
-/**
- * 公寓/楼盘/小区资产项目
- * 每个 Organization 下可以有多个 Property
- */
-model Property {
-  id             String       @id @default(uuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-
-  name        String
-  code        String
-  description String? @db.Text
-
-  addressLine1 String?
-  addressLine2 String?
-  city         String?
-  state        String?
-  postalCode   String?
-  country      String? @default("CN")
-
-  timezone String  @default("Asia/Shanghai")
-  isActive Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  units  Unit[]
-  leases Lease[]
-
-  @@unique([organizationId, code])
-  @@index([organizationId, name])
-}
-
-/**
- * 具体房源单元/房间
- * 每个 Property 下可以有多个 Unit
- */
-model Unit {
-  id         String   @id @default(uuid())
-  propertyId String
-  property   Property @relation(fields: [propertyId], references: [id])
-
-  name       String?
-  unitNumber String
-  floor      Int?
-  bedrooms   Int?
-  bathrooms  Int?
-  areaSqm    Float?
-
-  status   UnitStatus @default(VACANT)
-  isActive Boolean    @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  leases Lease[]
-
-  @@unique([propertyId, unitNumber])
-  @@index([propertyId, status])
-}
-
-/**
- * 租客/承租人实体
- * 每个 Tenant 属于一个 Organization
- */
-model Tenant {
-  id             String       @id @default(uuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-
-  fullName String
-  email    String?
-  phone    String?
-  idNumber String?
-  notes    String? @db.Text
-
-  isActive Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  leases Lease[]
-
-  @@unique([organizationId, email])
-  @@unique([organizationId, phone])
-  @@index([organizationId, fullName])
-}
-
-/**
- * 租约/合同核心业务实体
- * 关联 Organization、Property、Unit、Tenant
- */
-model Lease {
-  id String @id @default(uuid())
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-
-  propertyId String
-  property   Property @relation(fields: [propertyId], references: [id])
-
-  unitId String
-  unit   Unit   @relation(fields: [unitId], references: [id])
-
-  tenantId String
-  tenant   Tenant @relation(fields: [tenantId], references: [id])
-
-  status    LeaseStatus @default(PENDING)
-  billCycle BillCycle   @default(MONTHLY)
-
-  startDate DateTime
-  endDate   DateTime?
-
-  rentAmount    Decimal  @db.Decimal(10, 2)
-  currency      String   @default("CNY")
-  depositAmount Decimal? @db.Decimal(10, 2)
-
-  notes String? @db.Text
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  payments Payment[]
-
-  @@index([unitId, status])
-  @@index([organizationId, status])
-  @@index([tenantId, status])
-}
-
-/**
- * 支付/账单记录
- * 代表租约上的一条账单或一笔应付/实付记录
- */
-model Payment {
-  id String @id @default(uuid())
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-
-  leaseId String
-  lease   Lease  @relation(fields: [leaseId], references: [id])
-
-  type   BillType
-  status PaymentStatus  @default(PENDING)
-  method PaymentMethod?
-
-  amount   Decimal @db.Decimal(10, 2)
-  currency String  @default("CNY")
-
-  dueDate DateTime
-  paidAt  DateTime?
-
-  externalRef String?
-  notes       String? @db.Text
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([organizationId, status, dueDate])
-  @@index([leaseId, status])
-}
-
-/**
- * 系统用户（登录用户）
- * 与 Tenant（租客）分开，代表管理员/员工等
- */
-model User {
-  id String @id @default(uuid())
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-
-  email        String  @unique
-  passwordHash String
-  fullName     String?
-  role         OrgRole @default(STAFF)
-
-  isActive    Boolean   @default(true)
-  lastLoginAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  auditLogs AuditLog[]
-
-  @@index([organizationId, role])
-}
-
-/**
- * 审计日志
- * 记录系统操作的可追溯性记录
- */
-model AuditLog {
-  id String @id @default(uuid())
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-
-  userId String?
-  user   User?   @relation(fields: [userId], references: [id])
-
-  entity    String
-  entityId  String?
-  action    String
-  ip        String?
-  userAgent String?
-  metadata  Json?
-
-  createdAt DateTime @default(now())
-
-  @@index([organizationId, createdAt])
-  @@index([organizationId, entity, entityId])
 }

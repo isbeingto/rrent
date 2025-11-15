@@ -5,11 +5,13 @@ import {
   Body,
   UseGuards,
   Request,
+  Ip,
 } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
 import { AuthService } from "./auth.service";
 import { User } from "@prisma/client";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
+import { Request as ExpressRequest } from "express";
 
 interface LoginRequest {
   email: string;
@@ -45,9 +47,18 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async login(
     @Body() loginRequest: LoginRequest,
+    @Ip() ip: string,
+    @Request() req: ExpressRequest,
   ): Promise<{ accessToken: string; user: Omit<User, "passwordHash"> }> {
     const { email, password, organizationCode } = loginRequest;
-    return this.authService.login(email, password, organizationCode);
+    const userAgent = req.get("user-agent");
+    return this.authService.login(
+      email,
+      password,
+      organizationCode,
+      ip,
+      userAgent,
+    );
   }
 
   /**

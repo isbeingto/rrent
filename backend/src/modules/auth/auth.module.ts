@@ -7,6 +7,7 @@ import { AuthController } from "./auth.controller";
 import { UserModule } from "../user/user.module";
 import { PrismaModule } from "../../prisma/prisma.module";
 import { BcryptPasswordHasher } from "../../common/security/password-hasher";
+import { AuditLogModule } from "../audit-log/audit-log.module";
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { BcryptPasswordHasher } from "../../common/security/password-hasher";
     PassportModule,
     PrismaModule,
     ConfigModule,
+    AuditLogModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

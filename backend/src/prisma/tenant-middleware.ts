@@ -48,46 +48,46 @@ const ACTIONS_WITH_WHERE = new Set<string>([
  * @param tenantContext 租户上下文服务
  * @returns Prisma 中间件函数
  */
-export function createTenantMiddleware(
-  tenantContext: TenantContext,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): any {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return async (params: any, next: any) => {
-    const orgId = tenantContext.getOrganizationId();
+export function createTenantExtension(tenantContext: TenantContext) {
+  return {
+    query: {
+      $allModels: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        $allOperations: async (params: {
+          model?: string;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          args?: Record<string, any>;
+          action?: string;
+          operation?: string;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          query: (args: Record<string, any>) => Promise<any>;
+        }) => {
+          const orgId = tenantContext.getOrganizationId();
+          if (!orgId) {
+            return params.query(params.args ?? {});
+          }
 
-    // 如果无 orgId 上下文，不进行任何处理
-    if (!orgId) {
-      return next(params);
-    }
+          if (!ORG_SCOPED_MODELS.has(params.model ?? "")) {
+            return params.query(params.args ?? {});
+          }
 
-    // Organization 模型不注入 organizationId（它是租户根本身）
-    if (!ORG_SCOPED_MODELS.has(params.model ?? "")) {
-      return next(params);
-    }
+          const action = params.operation ?? params.action;
+          if (!action || !ACTIONS_WITH_WHERE.has(action)) {
+            return params.query(params.args ?? {});
+          }
 
-    // 只处理需要 where 条件的操作
-    if (!ACTIONS_WITH_WHERE.has(params.action)) {
-      return next(params);
-    }
+          const args = {
+            ...params.args,
+          };
+          const existingWhere = args.where ?? {};
+          args.where = {
+            ...existingWhere,
+            organizationId: existingWhere.organizationId ?? orgId,
+          };
 
-    // 安全地获取现有 where 条件
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const existingWhere = (params.args as any)?.where ?? {};
-
-    // 合并 where 条件
-    // 如果服务层已经指定了 organizationId，保留原值（不覆盖）
-    // 否则，注入当前上下文的 organizationId
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (params.args as any) = {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ...(params.args as any),
-      where: {
-        ...existingWhere,
-        organizationId: existingWhere.organizationId ?? orgId,
+          return params.query(args);
+        },
       },
-    };
-
-    return next(params);
+    },
   };
 }

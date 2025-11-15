@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from "@nestjs/testing";
 import { INestApplication, ValidationPipe } from "@nestjs/common";
-import * as request from "supertest";
+import request from "supertest";
 import { AppModule } from "../src/app.module";
 import { PrismaService } from "../src/prisma/prisma.service";
 import {
@@ -18,6 +18,7 @@ import {
 describe("BE-5-50: List Pagination E2E", () => {
   let app: INestApplication;
   let prisma: PrismaService;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let authToken: string;
   let organization: Organization;
   let property: Property;
@@ -40,7 +41,8 @@ describe("BE-5-50: List Pagination E2E", () => {
 
     prisma = app.get<PrismaService>(PrismaService);
 
-    // Clean up existing test data
+    // Clean up existing test data (respecting foreign keys)
+    await prisma.auditLog.deleteMany({});
     await prisma.payment.deleteMany({});
     await prisma.lease.deleteMany({});
     await prisma.tenant.deleteMany({});
@@ -59,21 +61,23 @@ describe("BE-5-50: List Pagination E2E", () => {
     });
 
     // Create test user for authentication
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const user = await prisma.user.create({
       data: {
-        username: "testuser_pagination",
         email: "testuser_pagination@example.com",
         passwordHash: "$2b$10$dummyhashfortest",
         organizationId: organization.id,
         role: OrgRole.OWNER,
+        fullName: "Test User Pagination",
       },
     });
 
     // Get auth token
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const authResponse = await request(app.getHttpServer())
       .post("/auth/login")
       .send({
-        username: "testuser_pagination",
+        email: "testuser_pagination@example.com",
         password: "TestPassword123!",
       });
 
@@ -108,9 +112,11 @@ describe("BE-5-50: List Pagination E2E", () => {
       });
     }
 
-    tenant = await prisma.tenant.findFirst({
+    const foundTenant = await prisma.tenant.findFirst({
       where: { organizationId: organization.id },
     });
+    if (!foundTenant) throw new Error("Tenant not found");
+    tenant = foundTenant;
 
     // Create units
     for (let i = 1; i <= 10; i++) {
@@ -122,9 +128,10 @@ describe("BE-5-50: List Pagination E2E", () => {
       });
     }
 
-    const unit = await prisma.unit.findFirst({
+    const foundUnit = await prisma.unit.findFirst({
       where: { propertyId: property.id },
     });
+    if (!foundUnit) throw new Error("Unit not found");
 
     // Create leases with different statuses
     for (let i = 0; i < 8; i++) {
@@ -132,8 +139,8 @@ describe("BE-5-50: List Pagination E2E", () => {
         data: {
           organizationId: organization.id,
           propertyId: property.id,
-          unitId: unit!.id,
-          tenantId: tenant!.id,
+          unitId: foundUnit.id,
+          tenantId: tenant.id,
           startDate: new Date("2024-01-01"),
           endDate: new Date("2024-12-31"),
           rentAmount: 1000 + i * 100,
@@ -143,16 +150,19 @@ describe("BE-5-50: List Pagination E2E", () => {
       });
     }
 
-    lease = await prisma.lease.findFirst({
+    const foundLease = await prisma.lease.findFirst({
       where: { organizationId: organization.id, status: LeaseStatus.ACTIVE },
     });
+    if (!foundLease) throw new Error("Lease not found");
+    lease = foundLease;
 
     // Create payments with different statuses and due dates
     for (let i = 0; i < 12; i++) {
       await prisma.payment.create({
         data: {
           organizationId: organization.id,
-          leaseId: lease!.id,
+          leaseId: lease.id,
+          type: "RENT",
           dueDate: new Date(Date.now() - i * 7 * 24 * 60 * 60 * 1000),
           amount: 1000,
           status: i < 6 ? PaymentStatus.PENDING : PaymentStatus.PAID,
@@ -163,6 +173,7 @@ describe("BE-5-50: List Pagination E2E", () => {
   });
 
   afterAll(async () => {
+    await prisma.auditLog.deleteMany({});
     await prisma.payment.deleteMany({});
     await prisma.lease.deleteMany({});
     await prisma.tenant.deleteMany({});
@@ -284,14 +295,12 @@ describe("BE-5-50: List Pagination E2E", () => {
 
   describe("3️⃣ Status Filter", () => {
     it("should filter leases by ACTIVE status", async () => {
-      const response = await request(app.getHttpServer())
-        .get("/leases")
-        .query({
-          organizationId: organization.id,
-          status: LeaseStatus.ACTIVE,
-          page: 1,
-          pageSize: 20,
-        });
+      const response = await request(app.getHttpServer()).get("/leases").query({
+        organizationId: organization.id,
+        status: LeaseStatus.ACTIVE,
+        page: 1,
+        pageSize: 20,
+      });
 
       expect(response.status).toBe(200);
       expect(response.body.items.length).toBeGreaterThan(0);
@@ -303,14 +312,12 @@ describe("BE-5-50: List Pagination E2E", () => {
     });
 
     it("should filter leases by PENDING status", async () => {
-      const response = await request(app.getHttpServer())
-        .get("/leases")
-        .query({
-          organizationId: organization.id,
-          status: LeaseStatus.PENDING,
-          page: 1,
-          pageSize: 20,
-        });
+      const response = await request(app.getHttpServer()).get("/leases").query({
+        organizationId: organization.id,
+        status: LeaseStatus.PENDING,
+        page: 1,
+        pageSize: 20,
+      });
 
       expect(response.status).toBe(200);
       expect(response.body.items.length).toBeGreaterThan(0);
@@ -517,15 +524,13 @@ describe("BE-5-50: List Pagination E2E", () => {
     it("should combine status and date filter for leases", async () => {
       const dateStart = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
 
-      const response = await request(app.getHttpServer())
-        .get("/leases")
-        .query({
-          organizationId: organization.id,
-          status: LeaseStatus.ACTIVE,
-          dateStart: dateStart.toISOString(),
-          page: 1,
-          pageSize: 20,
-        });
+      const response = await request(app.getHttpServer()).get("/leases").query({
+        organizationId: organization.id,
+        status: LeaseStatus.ACTIVE,
+        dateStart: dateStart.toISOString(),
+        page: 1,
+        pageSize: 20,
+      });
 
       expect(response.status).toBe(200);
       expect(
@@ -600,7 +605,9 @@ describe("BE-5-50: List Pagination E2E", () => {
       ).toBe(false);
 
       // Cleanup
-      await prisma.tenant.deleteMany({ where: { organizationId: otherOrg.id } });
+      await prisma.tenant.deleteMany({
+        where: { organizationId: otherOrg.id },
+      });
       await prisma.organization.delete({ where: { id: otherOrg.id } });
     });
 
@@ -638,14 +645,12 @@ describe("BE-5-50: List Pagination E2E", () => {
     });
 
     it("should properly paginate lease list with filters", async () => {
-      const response = await request(app.getHttpServer())
-        .get("/leases")
-        .query({
-          organizationId: organization.id,
-          status: LeaseStatus.ACTIVE,
-          page: 1,
-          pageSize: 5,
-        });
+      const response = await request(app.getHttpServer()).get("/leases").query({
+        organizationId: organization.id,
+        status: LeaseStatus.ACTIVE,
+        page: 1,
+        pageSize: 5,
+      });
 
       expect(response.status).toBe(200);
       expect(response.body.items).toBeDefined();
@@ -659,7 +664,9 @@ describe("BE-5-50: List Pagination E2E", () => {
         .get("/payments")
         .query({
           organizationId: organization.id,
-          dueDateFrom: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+          dueDateFrom: new Date(
+            Date.now() - 30 * 24 * 60 * 60 * 1000,
+          ).toISOString(),
           page: 1,
           pageSize: 10,
         });
@@ -776,9 +783,9 @@ describe("BE-5-50: List Pagination E2E", () => {
           .query({ ...endpoint.query, page: 1, pageSize: 5 });
 
         expect(response.headers["x-total-count"]).toBeDefined();
-        expect(Number(response.headers["x-total-count"])).toBeGreaterThanOrEqual(
-          0,
-        );
+        expect(
+          Number(response.headers["x-total-count"]),
+        ).toBeGreaterThanOrEqual(0);
       }
     });
   });

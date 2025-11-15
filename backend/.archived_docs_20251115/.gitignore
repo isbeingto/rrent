@@ -1,0 +1,4 @@
+# 这个目录包含历史归档文档，不需要提交到 git
+*
+!README.md
+!.gitignore

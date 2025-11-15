@@ -8,6 +8,8 @@ import { UserService } from "../user/user.service";
 import { BcryptPasswordHasher } from "../../common/security/password-hasher";
 import { User, OrgRole } from "@prisma/client";
 import { PrismaService } from "../../prisma/prisma.service";
+import { AuditLogService } from "../audit-log/audit-log.service";
+import { AuditAction, AuditEntity } from "../audit-log/audit-event.enum";
 
 /**
  * 认证服务
@@ -20,6 +22,7 @@ export class AuthService {
     private readonly passwordHasher: BcryptPasswordHasher,
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   /**
@@ -65,12 +68,16 @@ export class AuthService {
    * @param email 用户邮箱
    * @param password 明文密码
    * @param organizationCode 组织代码
+   * @param ip 客户端 IP 地址
+   * @param userAgent 用户代理字符串
    * @returns 访问令牌和用户信息
    */
   async login(
     email: string,
     password: string,
     organizationCode: string,
+    ip?: string,
+    userAgent?: string,
   ): Promise<{ accessToken: string; user: Omit<User, "passwordHash"> }> {
     // 根据组织代码查找组织 ID
     const organization = await this.prisma.organization.findFirst({
@@ -91,6 +98,20 @@ export class AuthService {
     );
 
     if (!user) {
+      // 记录登录失败审计日志
+      await this.auditLogService.log(
+        {
+          organizationId: organization.id,
+          ip,
+          userAgent,
+        },
+        {
+          entity: AuditEntity.USER,
+          entityId: email, // 使用 email 作为标识，因为此时还没有 userId
+          action: AuditAction.LOGIN_FAILED,
+          metadata: { email, reason: "Invalid credentials" },
+        },
+      );
       throw new UnauthorizedException("Invalid email or password");
     }
 
@@ -102,6 +123,22 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(payload);
+
+    // 记录登录成功审计日志
+    await this.auditLogService.log(
+      {
+        organizationId: user.organizationId,
+        userId: user.id,
+        ip,
+        userAgent,
+      },
+      {
+        entity: AuditEntity.USER,
+        entityId: user.id,
+        action: AuditAction.LOGIN,
+        metadata: { email: user.email },
+      },
+    );
 
     // 返回令牌和用户信息（不包含密码哈希）
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

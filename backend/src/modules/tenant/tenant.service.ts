@@ -65,7 +65,8 @@ export class TenantService {
     query: QueryTenantDto,
   ): Promise<Paginated<Tenant>> {
     const { page, pageSize, sort, order } = listQuery;
-    const { organizationId, fullName, keyword, isActive, dateStart, dateEnd } = query;
+    const { organizationId, fullName, keyword, isActive, dateStart, dateEnd } =
+      query;
 
     const where: Prisma.TenantWhereInput = {
       organizationId,

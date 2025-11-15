@@ -41,7 +41,7 @@ export class TenantController {
       query as unknown as Record<string, unknown>,
     );
     const result = await this.tenantService.findMany(listQuery, query);
-    res.setHeader('X-Total-Count', result.meta.total.toString());
+    res.setHeader("X-Total-Count", result.meta.total.toString());
     return result;
   }
 
