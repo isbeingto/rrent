@@ -1,8 +1,4 @@
-import {
-  type PropsWithChildren,
-  useEffect,
-  useState,
-} from "react";
+import { type PropsWithChildren, useEffect, useState } from "react";
 import { ConfigProvider, theme } from "antd";
 import { RefineThemes } from "@refinedev/antd";
 import { ColorModeContext } from "./context";

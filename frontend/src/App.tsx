@@ -1,13 +1,8 @@
-import {
-  Refine,
-  GitHubBanner,
-} from "@refinedev/core";
+import { Refine, GitHubBanner } from "@refinedev/core";
 import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 
-import {
-  useNotificationProvider,
-} from "@refinedev/antd";
+import { useNotificationProvider } from "@refinedev/antd";
 import "@refinedev/antd/dist/reset.css";
 
 import dataProvider from "@refinedev/simple-rest";
@@ -19,6 +14,8 @@ import routerProvider, {
 } from "@refinedev/react-router";
 import { ColorModeContextProvider } from "./contexts/color-mode";
 import AppRoutes from "./app/AppRoutes";
+// FE-0-74: Import HTTP client to initialize API_BASE_URL
+import "@shared/api/http";
 
 function App() {
   return (
@@ -31,9 +28,20 @@ function App() {
               {/* TODO(FE-0-71): replace refine dataProvider with Axios-based implementation */}
               {/* TODO(FE-0-72): wire authProvider & interceptors (JWT) */}
               <Refine
-                dataProvider={dataProvider(import.meta.env.VITE_API_BASE_URL || "https://api.fake-rest.refine.dev")}
+                dataProvider={dataProvider(
+                  import.meta.env.VITE_API_BASE_URL ||
+                    "https://api.fake-rest.refine.dev"
+                )}
                 notificationProvider={useNotificationProvider}
                 routerProvider={routerProvider}
+                resources={[
+                  { name: "organizations", list: "/organizations" },
+                  { name: "properties", list: "/properties" },
+                  { name: "units", list: "/units" },
+                  { name: "tenants", list: "/tenants" },
+                  { name: "leases", list: "/leases" },
+                  { name: "payments", list: "/payments" },
+                ]}
                 options={{
                   syncWithLocation: true,
                   warnWhenUnsavedChanges: true,

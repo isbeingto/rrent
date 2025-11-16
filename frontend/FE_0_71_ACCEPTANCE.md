@@ -10,16 +10,16 @@ AntD 布局与导航骨架已完成并通过严格验收。前端应用采用标
 
 ## 2. Files Touched
 
-| 文件路径 | 用途 | 状态 |
-|--------|------|------|
-| `src/App.tsx` | 应用入口，集成 Refine + AntD | ✅ 已完成 |
-| `src/app/AppRoutes.tsx` | 路由配置（createBrowserRouter） | ✅ 已完成 |
-| `src/app/layout/MainLayout.tsx` | 三段式主布局容器 | ✅ 已完成 |
-| `src/app/layout/SiderNav.tsx` | 左侧导航菜单组件 | ✅ 已完成 |
-| `src/pages/dashboard/index.tsx` | Dashboard 首页 | ✅ 已完成 |
-| `src/pages/not-found.tsx` | 404 错误页面 | ✅ 已完成 |
-| `src/shared/nav.tsx` | 导航配置（NAV_ITEMS） | ✅ 已完成 |
-| `vite.config.ts` | Vite 配置（新增 server.host） | ✅ 已修复 |
+| 文件路径                        | 用途                            | 状态      |
+| ------------------------------- | ------------------------------- | --------- |
+| `src/App.tsx`                   | 应用入口，集成 Refine + AntD    | ✅ 已完成 |
+| `src/app/AppRoutes.tsx`         | 路由配置（createBrowserRouter） | ✅ 已完成 |
+| `src/app/layout/MainLayout.tsx` | 三段式主布局容器                | ✅ 已完成 |
+| `src/app/layout/SiderNav.tsx`   | 左侧导航菜单组件                | ✅ 已完成 |
+| `src/pages/dashboard/index.tsx` | Dashboard 首页                  | ✅ 已完成 |
+| `src/pages/not-found.tsx`       | 404 错误页面                    | ✅ 已完成 |
+| `src/shared/nav.tsx`            | 导航配置（NAV_ITEMS）           | ✅ 已完成 |
+| `vite.config.ts`                | Vite 配置（新增 server.host）   | ✅ 已修复 |
 
 ---
 
@@ -74,26 +74,26 @@ dist/
 
 ### 4.2 Console 面板检查
 
-| 检查项 | 状态 | 说明 |
-|------|------|------|
-| **运行时错误** | ✅ 无 | 没有红色 JavaScript 错误 |
+| 检查项             | 状态    | 说明                                                       |
+| ------------------ | ------- | ---------------------------------------------------------- |
+| **运行时错误**     | ✅ 无   | 没有红色 JavaScript 错误                                   |
 | **WebSocket 错误** | ⚠️ 预期 | Refine DevTools (ws://localhost:5001) 连接失败，不影响应用 |
-| **警告** | ✅ 无 | 无关键警告 |
+| **警告**           | ✅ 无   | 无关键警告                                                 |
 
 ### 4.3 Network 面板检查
 
 **主要资源加载**:
 
-| 资源 | 状态码 | 说明 |
-|-----|-------|------|
-| `/` | 200 | HTML 文档 |
-| `/@vite/client` | 200 | Vite 客户端 |
-| `/src/index.tsx` | 200 | React 入口 |
-| `/src/App.tsx` | 200 | 应用组件 |
-| `antd.js` | 200 | Ant Design 库 |
-| `@refinedev_antd.js` | 200 | Refine AntD 集成 |
-| `/src/app/layout/MainLayout.tsx` | 200 | 主布局 |
-| `/src/shared/nav.tsx` | 200 | 导航配置 |
+| 资源                             | 状态码 | 说明             |
+| -------------------------------- | ------ | ---------------- |
+| `/`                              | 200    | HTML 文档        |
+| `/@vite/client`                  | 200    | Vite 客户端      |
+| `/src/index.tsx`                 | 200    | React 入口       |
+| `/src/App.tsx`                   | 200    | 应用组件         |
+| `antd.js`                        | 200    | Ant Design 库    |
+| `@refinedev_antd.js`             | 200    | Refine AntD 集成 |
+| `/src/app/layout/MainLayout.tsx` | 200    | 主布局           |
+| `/src/shared/nav.tsx`            | 200    | 导航配置         |
 
 **总结**: ✅ 所有资源加载成功（44 个请求，全部 200/304）
 
@@ -101,7 +101,7 @@ dist/
 
 #### 4.4.1 页面结构验证
 
-**元素树检查结：
+\*\*元素树检查结：
 
 ```
 RootWebArea
@@ -133,12 +133,14 @@ RootWebArea
 #### 4.4.2 导航交互测试
 
 **Test 1: 点击 Dashboard 菜单**
+
 - ✅ 菜单项获得焦点（focused）
 - ✅ 内容区域显示 Dashboard 页面
 - ✅ 面包屑显示 "Dashboard"
 - ✅ URL 保持为 `/`（React Router 默认行为）
 
 **Test 2: Sider 折叠/展开**
+
 - ✅ 点击 Header 上的折叠按钮
 - ✅ Sider 宽度从 240px → 64px
 - ✅ Sider 标题从 "rrent" → "R"
@@ -147,6 +149,7 @@ RootWebArea
 - ✅ 再次点击展开，恢复原状
 
 **Test 3: 禁用菜单项**
+
 - ✅ Organizations, Properties, Units, Tenants, Leases, Payments 均标记为 disabled
 - ✅ 禁用项无法点击（AntD 内置处理）
 - ✅ 视觉上灰显，提示用户无法访问
@@ -224,19 +227,19 @@ export const NAV_ITEMS = [
 
 ## 6. Acceptance Criteria Verification
 
-| # | 标准 | 验收结果 | 说明 |
-|----|------|---------|------|
-| 1 | `pnpm lint` exit code = 0 | ✅ PASS | 0 errors, 0 warnings |
-| 2 | `pnpm build` 成功 | ✅ PASS | 11.92s 内完成，486.40 kB |
-| 3 | 代码审查：AntD 布局 | ✅ PASS | Header/Sider/Content 三段式 |
-| 4 | 代码审查：导航骨架 | ✅ PASS | 7 个菜单项，Dashboard 启用，其他禁用 |
-| 5 | 代码审查：路由切换 | ✅ PASS | React Router 7.0.2，路由配置规范 |
-| 6 | Chrome DevTools：页面打开 | ✅ PASS | http://74.122.24.3:5173/ 正常访问 |
-| 7 | Chrome DevTools：Console 无错误 | ✅ PASS | 无红色错误，WebSocket 预期失败 |
-| 8 | Chrome DevTools：Network 正常 | ✅ PASS | 44 个请求全部 200/304 |
-| 9 | Chrome DevTools：导航交互 | ✅ PASS | Dashboard 可选中，禁用项无法点击 |
-| 10 | Chrome DevTools：布局稳定性 | ✅ PASS | Sider 折叠/展开无闪烁，Content 流畅更新 |
-| 11 | 验收文档 | ✅ PASS | FE_0_71_ACCEPTANCE.md 完整编写 |
+| #   | 标准                            | 验收结果 | 说明                                    |
+| --- | ------------------------------- | -------- | --------------------------------------- |
+| 1   | `pnpm lint` exit code = 0       | ✅ PASS  | 0 errors, 0 warnings                    |
+| 2   | `pnpm build` 成功               | ✅ PASS  | 11.92s 内完成，486.40 kB                |
+| 3   | 代码审查：AntD 布局             | ✅ PASS  | Header/Sider/Content 三段式             |
+| 4   | 代码审查：导航骨架              | ✅ PASS  | 7 个菜单项，Dashboard 启用，其他禁用    |
+| 5   | 代码审查：路由切换              | ✅ PASS  | React Router 7.0.2，路由配置规范        |
+| 6   | Chrome DevTools：页面打开       | ✅ PASS  | http://74.122.24.3:5173/ 正常访问       |
+| 7   | Chrome DevTools：Console 无错误 | ✅ PASS  | 无红色错误，WebSocket 预期失败          |
+| 8   | Chrome DevTools：Network 正常   | ✅ PASS  | 44 个请求全部 200/304                   |
+| 9   | Chrome DevTools：导航交互       | ✅ PASS  | Dashboard 可选中，禁用项无法点击        |
+| 10  | Chrome DevTools：布局稳定性     | ✅ PASS  | Sider 折叠/展开无闪烁，Content 流畅更新 |
+| 11  | 验收文档                        | ✅ PASS  | FE_0_71_ACCEPTANCE.md 完整编写          |
 
 ---
 
@@ -255,9 +258,9 @@ export const NAV_ITEMS = [
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: "0.0.0.0",      // 监听所有网络接口
-    port: 5173,           // 固定端口
-    strictPort: false,    // 端口被占用时自动递增
+    host: "0.0.0.0", // 监听所有网络接口
+    port: 5173, // 固定端口
+    strictPort: false, // 端口被占用时自动递增
   },
   // ... 其他配置
 });
@@ -276,18 +279,18 @@ tcp LISTEN 0 511 0.0.0.0:5173 0.0.0.0:*
 
 ## 8. 环境信息
 
-| 项目 | 值 |
-|-----|-----|
-| **前端框架** | React 19.1.0 |
-| **构建工具** | Vite 6.4.1 |
-| **TypeScript** | 5.8.3 (strict mode) |
-| **Ant Design** | 5.23.0 |
-| **React Router** | 7.0.2 |
-| **Refine** | 5.0.6 |
-| **包管理器** | pnpm >=10.0.0 |
-| **Node 版本** | v20+ (推荐) |
-| **Dev Server** | http://74.122.24.3:5173/ |
-| **测试工具** | Chrome DevTools MCP |
+| 项目             | 值                       |
+| ---------------- | ------------------------ |
+| **前端框架**     | React 19.1.0             |
+| **构建工具**     | Vite 6.4.1               |
+| **TypeScript**   | 5.8.3 (strict mode)      |
+| **Ant Design**   | 5.23.0                   |
+| **React Router** | 7.0.2                    |
+| **Refine**       | 5.0.6                    |
+| **包管理器**     | pnpm >=10.0.0            |
+| **Node 版本**    | v20+ (推荐)              |
+| **Dev Server**   | http://74.122.24.3:5173/ |
+| **测试工具**     | Chrome DevTools MCP      |
 
 ---
 

@@ -64,10 +64,10 @@ VITE_APP_ENV=development
 
 ### 环境变量说明
 
-| 变量名 | 说明 | 示例值 |
-|---------|------|--------|
-| `VITE_API_BASE_URL` | 后端 API 服务地址 | `http://localhost:3000/api` |
-| `VITE_APP_ENV` | 应用运行环境 | `development` / `production` |
+| 变量名              | 说明              | 示例值                       |
+| ------------------- | ----------------- | ---------------------------- |
+| `VITE_API_BASE_URL` | 后端 API 服务地址 | `http://localhost:3000/api`  |
+| `VITE_APP_ENV`      | 应用运行环境      | `development` / `production` |
 
 在代码中通过 `import.meta.env.VITE_API_BASE_URL` 访问。
 
@@ -124,22 +124,22 @@ frontend/
 
 ```typescript
 // 推荐用法
-import httpClient from '@shared/api/http';
-import { MyComponent } from '@components/my-component';
-import { HomePage } from '@pages/home';
+import httpClient from "@shared/api/http";
+import { MyComponent } from "@components/my-component";
+import { HomePage } from "@pages/home";
 
 // 而不是
-import httpClient from '../../shared/api/http';
+import httpClient from "../../shared/api/http";
 ```
 
 **别名映射** (`tsconfig.json` + `vite.config.ts`)：
 
-| 别名 | 映射路径 |
-|------|--------|
-| `@/*` | `src/*` |
-| `@shared/*` | `src/shared/*` |
+| 别名            | 映射路径           |
+| --------------- | ------------------ |
+| `@/*`           | `src/*`            |
+| `@shared/*`     | `src/shared/*`     |
 | `@components/*` | `src/components/*` |
-| `@pages/*` | `src/pages/*` |
+| `@pages/*`      | `src/pages/*`      |
 
 ### ESLint 与 Prettier
 
@@ -214,7 +214,7 @@ export default function App() {
 ```typescript
 // 示例（伪代码）
 httpClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -226,7 +226,7 @@ httpClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // 重定向到登录页
-      window.location.href = '/login';
+      window.location.href = "/login";
     }
     return Promise.reject(error);
   }
@@ -294,11 +294,13 @@ import { ThemedLayout } from "@refinedev/antd";
 ### Q2: 如何配置不同环境的 API URL？
 
 创建对应的 `.env` 文件：
+
 - `.env.local` - 本地开发
 - `.env.staging.local` - Staging 环境
 - `.env.production.local` - 生产环境
 
 在构建时指定：
+
 ```bash
 VITE_APP_ENV=staging pnpm build
 ```
@@ -306,10 +308,10 @@ VITE_APP_ENV=staging pnpm build
 ### Q3: 如何在组件中使用 Axios？
 
 ```typescript
-import httpClient from '@shared/api/http';
+import httpClient from "@shared/api/http";
 
 export async function fetchOrganizations() {
-  const response = await httpClient.get('/organizations');
+  const response = await httpClient.get("/organizations");
   return response.data;
 }
 ```
@@ -335,6 +337,7 @@ pnpm lint:fix
 前端运行在 `http://localhost:5173`，后端 API 运行在 `http://localhost:3000`。
 
 确保后端 CORS 白名单包含：
+
 ```
 http://localhost:5173
 ```
@@ -349,10 +352,10 @@ http://localhost:5173
 export default defineConfig({
   server: {
     proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
+      "/api": {
+        target: "http://localhost:3000",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '/api'),
+        rewrite: (path) => path.replace(/^\/api/, "/api"),
       },
     },
   },
@@ -360,6 +363,7 @@ export default defineConfig({
 ```
 
 然后 `.env.local` 改为：
+
 ```env
 VITE_API_BASE_URL=http://localhost:5173/api
 ```
@@ -385,12 +389,12 @@ Vite 的环境变量在**构建时**被硬编码到产物中。若需在运行�
 
 ## 后续迭代计划
 
-| 任务 | 说明 |
-|------|------|
+| 任务    | 说明                                                         |
+| ------- | ------------------------------------------------------------ |
 | FE-0-71 | 替换 Refine Data Provider 为 Axios 实现，实现真正的 API 对接 |
-| FE-0-72 | 接入认证系统（登录、JWT 令牌、拦截器） |
-| FE-0-73 | 资源模块骨架（organizations/properties/units 等列表页） |
-| FE-1-* | 具体功能页面开发（CRUD、表单、筛选等） |
+| FE-0-72 | 接入认证系统（登录、JWT 令牌、拦截器）                       |
+| FE-0-73 | 资源模块骨架（organizations/properties/units 等列表页）      |
+| FE-1-\* | 具体功能页面开发（CRUD、表单、筛选等）                       |
 
 ---
 

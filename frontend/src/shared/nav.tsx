@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode } from "react";
 import {
   DashboardOutlined,
   BankOutlined,
@@ -7,7 +7,7 @@ import {
   UserOutlined,
   FileTextOutlined,
   DollarOutlined,
-} from '@ant-design/icons';
+} from "@ant-design/icons";
 
 export interface NavItem {
   key: string;
@@ -19,57 +19,57 @@ export interface NavItem {
 
 /**
  * 导航菜单配置
- * 
+ *
  * 除 dashboard 外其他项在 FE-0-72 任务中启用
  */
 export const NAV_ITEMS: NavItem[] = [
   {
-    key: 'dashboard',
-    label: 'Dashboard',
-    to: '/',
+    key: "dashboard",
+    label: "Dashboard",
+    to: "/",
     icon: <DashboardOutlined />,
     disabled: false,
   },
   {
-    key: 'organizations',
-    label: 'Organizations',
-    to: '/organizations',
+    key: "organizations",
+    label: "Organizations",
+    to: "/organizations",
     icon: <BankOutlined />,
-    disabled: true, // FE-0-72 启用
+    disabled: false,
   },
   {
-    key: 'properties',
-    label: 'Properties',
-    to: '/properties',
+    key: "properties",
+    label: "Properties",
+    to: "/properties",
     icon: <HomeOutlined />,
-    disabled: true, // FE-0-72 启用
+    disabled: false,
   },
   {
-    key: 'units',
-    label: 'Units',
-    to: '/units',
+    key: "units",
+    label: "Units",
+    to: "/units",
     icon: <AppstoreOutlined />,
-    disabled: true, // FE-0-72 启用
+    disabled: false,
   },
   {
-    key: 'tenants',
-    label: 'Tenants',
-    to: '/tenants',
+    key: "tenants",
+    label: "Tenants",
+    to: "/tenants",
     icon: <UserOutlined />,
-    disabled: true, // FE-0-72 启用
+    disabled: false,
   },
   {
-    key: 'leases',
-    label: 'Leases',
-    to: '/leases',
+    key: "leases",
+    label: "Leases",
+    to: "/leases",
     icon: <FileTextOutlined />,
-    disabled: true, // FE-0-72 启用
+    disabled: false,
   },
   {
-    key: 'payments',
-    label: 'Payments',
-    to: '/payments',
+    key: "payments",
+    label: "Payments",
+    to: "/payments",
     icon: <DollarOutlined />,
-    disabled: true, // FE-0-72 启用
+    disabled: false,
   },
 ];
