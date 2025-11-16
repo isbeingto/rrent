@@ -12,6 +12,7 @@
 ## ✅ 已完成任务列表
 
 ### TASK 70: 项目脚手架
+
 - **TASK-ID**: FE-0-70
 - **标题**: 项目脚手架（Refine + Ant Design）
 - **状态**: ✅ 完成
@@ -23,6 +24,7 @@
   - 迁移到 pnpm 包管理器
 
 ### TASK 71: 路由结构与占位页面
+
 - **TASK-ID**: FE-0-71
 - **标题**: 路由结构 & 占位页面
 - **状态**: ✅ 完成
@@ -33,6 +35,7 @@
   - 为所有功能创建占位页面
 
 ### TASK 73: 登录页面
+
 - **TASK-ID**: FE-0-73
 - **标题**: 登录页面实现
 - **状态**: ✅ 完成
@@ -42,6 +45,7 @@
   - 配置登录路由
 
 ### TASK 74: API 环境配置
+
 - **TASK-ID**: FE-0-74
 - **标题**: API 环境配置
 - **状态**: ✅ 完成
@@ -52,6 +56,7 @@
   - 创建 `.env.example` 模板
 
 ### TASK 75: ESLint/Prettier 对齐
+
 - **TASK-ID**: FE-0-75
 - **标题**: ESLint/Prettier 对齐
 - **状态**: ✅ 完成
@@ -63,6 +68,7 @@
   - 对全部代码执行一次性格式化
 
 ### TASK 76: 基线提交
+
 - **TASK-ID**: FE-0-76
 - **标题**: 基线提交
 - **状态**: ✅ 完成
@@ -77,17 +83,20 @@
 ## 🔧 技术栈总结
 
 ### 核心框架
+
 - **React**: 19.1.0
 - **Refine**: ^5.0.0（Core）+ ^6.0.1（Ant Design）
 - **Ant Design**: ^5.23.0
 - **React Router**: ^7.0.2
 
 ### 构建工具
+
 - **Vite**: ^6.3.5
 - **TypeScript**: ^5.8.3
 - **pnpm**: >=10.0.0
 
 ### 代码质量
+
 - **ESLint**: ^9.25.0（Flat Config）
 - **Prettier**: ^3.6.2
 - **eslint-config-prettier**: ^10.1.8
@@ -95,11 +104,13 @@
 ### 配置文件
 
 #### ESLint 配置
+
 - 文件: `eslint.config.js`
 - 使用 TypeScript ESLint + React Hooks + React Refresh
 - 集成 Prettier 避免规则冲突
 
 #### Prettier 配置
+
 - 文件: `.prettierrc`
 - 主要规则:
   ```json
@@ -118,17 +129,17 @@
 
 ```json
 {
-  "dev": "vite",                    // 开发服务器
-  "dev:start": "./start-dev.sh",    // 后台启动开发服务器
-  "dev:stop": "./stop-dev.sh",      // 停止开发服务器
-  "dev:status": "./status-dev.sh",  // 查看开发服务器状态
-  "build": "tsc && vite build",     // 生产构建
-  "preview": "vite preview",        // 预览生产构建
-  "lint": "eslint . --max-warnings 0",      // ESLint 检查
-  "lint:fix": "eslint . --fix",             // ESLint 自动修复
-  "format": "prettier --write ...",         // Prettier 格式化
-  "format:check": "prettier --check ...",   // Prettier 检查
-  "type-check": "tsc --noEmit"              // TypeScript 类型检查
+  "dev": "vite", // 开发服务器
+  "dev:start": "./start-dev.sh", // 后台启动开发服务器
+  "dev:stop": "./stop-dev.sh", // 停止开发服务器
+  "dev:status": "./status-dev.sh", // 查看开发服务器状态
+  "build": "tsc && vite build", // 生产构建
+  "preview": "vite preview", // 预览生产构建
+  "lint": "eslint . --max-warnings 0", // ESLint 检查
+  "lint:fix": "eslint . --fix", // ESLint 自动修复
+  "format": "prettier --write ...", // Prettier 格式化
+  "format:check": "prettier --check ...", // Prettier 检查
+  "type-check": "tsc --noEmit" // TypeScript 类型检查
 }
 ```
 
@@ -177,11 +188,13 @@ frontend/
 ## ✅ 验证结果
 
 ### Lint & Build
+
 - ✅ `pnpm lint`: 0 errors, 0 warnings
 - ✅ `pnpm build`: 构建成功
 - ✅ `pnpm format`: 全部代码已格式化
 
 ### Browser 测试（通过 chrome-devtools-mcp）
+
 - ✅ 开发服务器运行在 `http://localhost:5173/`
 - ✅ 首页（`/organizations`）正常渲染
 - ✅ 登录页（`/login`）正常渲染
@@ -193,9 +206,11 @@ frontend/
 ## 🚀 下一阶段：EPIC FE-1 | Data Provider
 
 ### 目标
+
 实现 Refine Data Provider，连接后端 API，实现完整的 CRUD 功能。
 
 ### 主要任务
+
 1. 实现自定义 Data Provider
 2. 集成后端 API（Organizations, Properties, Units, Tenants, Leases, Payments）
 3. 实现数据获取、创建、更新、删除功能
