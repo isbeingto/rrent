@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { IsInt, IsOptional, Max, Min } from "class-validator";
+import { IsInt, IsOptional, Max, Min, IsString, IsIn } from "class-validator";
 
 /**
  * 通用分页查询 DTO
@@ -18,6 +18,15 @@ export class PaginationQueryDto {
   @Max(100)
   @IsOptional()
   limit?: number = 20;
+
+  @IsString()
+  @IsOptional()
+  sort?: string;
+
+  @IsString()
+  @IsIn(["asc", "desc", "ASC", "DESC"])
+  @IsOptional()
+  order?: string;
 }
 
 /**

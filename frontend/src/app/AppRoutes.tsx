@@ -1,4 +1,5 @@
 import { Routes, Route } from "react-router";
+import { Authenticated } from "@refinedev/core";
 import MainLayout from "./layout/MainLayout";
 import Dashboard from "@pages/dashboard";
 import NotFound from "@pages/not-found";
@@ -15,6 +16,7 @@ import PaymentsList from "@pages/payments";
  *
  * 使用 MainLayout 作为根布局，包含 Dashboard、业务资源列表和 404 页面
  * /login 为公开路由，不包装在 MainLayout 中
+ * FE-1-78: 使用 Authenticated 组件保护所有业务路由
  */
 export default function AppRoutes() {
   return (
@@ -22,8 +24,19 @@ export default function AppRoutes() {
       {/* 公开路由 - 登录页 */}
       <Route path="/login" element={<LoginPage />} />
 
-      {/* 主应用布局及业务路由 */}
-      <Route path="/" element={<MainLayout />}>
+      {/* 主应用布局及业务路由 - 需要认证 */}
+      <Route
+        path="/"
+        element={
+          <Authenticated
+            key="authenticated"
+            fallback={<LoginPage />}
+            redirectOnFail="/login"
+          >
+            <MainLayout />
+          </Authenticated>
+        }
+      >
         {/* Dashboard 首页 */}
         <Route
           index

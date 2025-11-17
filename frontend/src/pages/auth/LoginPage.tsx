@@ -1,5 +1,5 @@
 import { Card, Form, Input, Button, Layout, message } from "antd";
-import { useState } from "react";
+import { useLogin } from "@refinedev/core";
 
 const { Content } = Layout;
 
@@ -18,28 +18,29 @@ interface LoginFormValues {
  * - password: 必填，最少 6 位
  * - organizationCode: 必填
  *
- * TODO(FE-1-Auth): 将此处替换为真实 /auth/login API 调用与 Token 处理
+ * FE-1-78: 已接入真实 authProvider.login
  */
 export default function LoginPage() {
   const [form] = Form.useForm<LoginFormValues>();
-  const [loading, setLoading] = useState(false);
+  const { mutate: login, isPending } = useLogin<LoginFormValues>();
 
   /**
    * 处理登录提交
-   * 当前为占位逻辑，仅打印表单值和显示成功消息
+   * 使用 Refine 的 useLogin hook 调用 authProvider.login
    */
   const handleLogin = async (values: LoginFormValues) => {
-    try {
-      setLoading(true);
-      // TODO(FE-1-Auth): 将此处替换为真实 /auth/login API 调用与 Token 处理
-      console.log("[LOGIN_STUB]", values);
-      message.success("登录请求已发送（当前为占位逻辑）");
-      // 占位逻辑结束
-    } catch {
-      message.error("登录失败，请稍后重试");
-    } finally {
-      setLoading(false);
-    }
+    login(values, {
+      onSuccess: () => {
+        // Refine 会自动处理 redirectTo
+        message.success("登录成功");
+      },
+      onError: (error) => {
+        // 显示错误消息
+        const errorMessage =
+          (error as { message?: string })?.message || "登录失败，请检查您的凭据";
+        message.error(errorMessage);
+      },
+    });
   };
 
   return (
@@ -114,7 +115,7 @@ export default function LoginPage() {
 
             {/* 登录按钮 */}
             <Form.Item>
-              <Button type="primary" htmlType="submit" block loading={loading}>
+              <Button type="primary" htmlType="submit" block loading={isPending}>
                 登录
               </Button>
             </Form.Item>

@@ -5,7 +5,9 @@ import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 import { useNotificationProvider } from "@refinedev/antd";
 import "@refinedev/antd/dist/reset.css";
 
-import dataProvider from "@refinedev/simple-rest";
+import { dataProvider } from "@providers/dataProvider";
+import { authProvider } from "@providers/authProvider";
+import { accessControlProvider } from "@providers/accessControlProvider";
 import { App as AntdApp } from "antd";
 import { BrowserRouter } from "react-router";
 import routerProvider, {
@@ -25,13 +27,13 @@ function App() {
         <ColorModeContextProvider>
           <AntdApp>
             <DevtoolsProvider>
-              {/* TODO(FE-0-71): replace refine dataProvider with Axios-based implementation */}
-              {/* TODO(FE-0-72): wire authProvider & interceptors (JWT) */}
+              {/* FE-1-77: Use custom Axios-based dataProvider */}
+              {/* FE-1-78: Use custom authProvider */}
+              {/* FE-1-79: Use custom accessControlProvider */}
               <Refine
-                dataProvider={dataProvider(
-                  import.meta.env.VITE_API_BASE_URL ||
-                    "https://api.fake-rest.refine.dev"
-                )}
+                dataProvider={dataProvider}
+                authProvider={authProvider}
+                accessControlProvider={accessControlProvider}
                 notificationProvider={useNotificationProvider}
                 routerProvider={routerProvider}
                 resources={[

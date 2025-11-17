@@ -1,7 +1,7 @@
 import { Injectable, ServiceUnavailableException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 
-interface HealthStatus {
+export interface HealthStatus {
   status: "ok" | "error";
   timestamp: string;
   uptime: number;
@@ -9,7 +9,7 @@ interface HealthStatus {
   version?: string;
 }
 
-interface ReadinessStatus extends HealthStatus {
+export interface ReadinessStatus extends HealthStatus {
   database: {
     connected: boolean;
     responseTime?: number;

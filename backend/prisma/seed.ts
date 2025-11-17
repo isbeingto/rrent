@@ -1,4 +1,5 @@
 import { PrismaClient, OrgRole } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -19,13 +20,14 @@ async function main() {
   console.log(`✓ Organization created: ${org.id} (${org.code})`);
 
   // 2. 创建 admin 用户
+  const passwordHash = await bcrypt.hash('Password123!', 10);
   const admin = await prisma.user.upsert({
     where: { email: 'admin@example.com' },
     update: {},
     create: {
       organizationId: org.id,
       email: 'admin@example.com',
-      passwordHash: 'changeme',
+      passwordHash,
       fullName: 'Admin User',
       role: OrgRole.OWNER,
     },

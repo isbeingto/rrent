@@ -1,5 +1,5 @@
 import { Controller, Get } from "@nestjs/common";
-import { HealthService } from "./health.service";
+import { HealthService, HealthStatus, ReadinessStatus } from "./health.service";
 
 @Controller("health")
 export class HealthController {
@@ -10,7 +10,7 @@ export class HealthController {
    * Used by load balancers and simple health checks
    */
   @Get()
-  async getHealth() {
+  async getHealth(): Promise<HealthStatus> {
     return this.healthService.getBasicHealth();
   }
 
@@ -19,7 +19,7 @@ export class HealthController {
    * Includes database connection check
    */
   @Get("ready")
-  async getReadiness() {
+  async getReadiness(): Promise<ReadinessStatus> {
     return this.healthService.getReadiness();
   }
 
@@ -28,7 +28,7 @@ export class HealthController {
    * Should return quickly to avoid restart loops
    */
   @Get("live")
-  async getLiveness() {
+  async getLiveness(): Promise<HealthStatus> {
     return this.healthService.getLiveness();
   }
 }
