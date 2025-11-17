@@ -81,17 +81,18 @@ async function getList<TData extends BaseRecord = BaseRecord>(
     const queryParams: Record<string, unknown> = {};
 
     // 注入 organizationId（后端要求所有列表查询必须包含）
+    // 但 organizations 资源不需要，因为它仅通过 X-Organization-Id 头部传递
     const auth = loadAuth();
-    if (auth?.organizationId) {
+    if (auth?.organizationId && resource !== 'organizations') {
       queryParams.organizationId = auth.organizationId;
     }
 
     // 分页映射
-    // Refine pagination: pageNumber (从 1 开始) 和 pageSize
+    // Refine pagination: currentPage (从 1 开始) 和 pageSize
     // 后端期望: page 和 limit
     if (pagination) {
-      queryParams.page = (pagination as { pageNumber?: number; pageSize?: number }).pageNumber ?? 1;
-      queryParams.limit = (pagination as { pageNumber?: number; pageSize?: number }).pageSize ?? 20;
+      queryParams.page = (pagination as { currentPage?: number; pageSize?: number }).currentPage ?? 1;
+      queryParams.limit = (pagination as { currentPage?: number; pageSize?: number }).pageSize ?? 20;
     } else {
       queryParams.page = 1;
       queryParams.limit = 20;
@@ -152,7 +153,14 @@ async function getOne<TData extends BaseRecord = BaseRecord>(
 ): Promise<GetOneResponse<TData>> {
   try {
     const { resource, id } = params;
-    const url = `${buildResourcePath(resource)}/${id}`;
+    let url = `${buildResourcePath(resource)}/${id}`;
+    
+    // 为非 organizations 资源添加 organizationId 查询参数
+    const auth = loadAuth();
+    if (auth?.organizationId && resource !== 'organizations') {
+      url += `?organizationId=${auth.organizationId}`;
+    }
+    
     const response = await httpClient.get<TData>(url);
     return {
       data: response.data,
@@ -170,11 +178,26 @@ async function create<TData extends BaseRecord = BaseRecord, TVariables = any>(
   params: CreateParams<TVariables>
 ): Promise<CreateResponse<TData>> {
   try {
-    const { resource, values } = params as CreateParams<TVariables> & {
-      values: Record<string, unknown>;
-    };
-    const url = buildResourcePath(resource);
-    const response = await httpClient.post<TData>(url, values);
+    const { resource, variables } = params;
+    let url = buildResourcePath(resource);
+    
+    const auth = loadAuth();
+    
+    // 根据后端 API 约定处理 organizationId：
+    // - Tenants: organizationId 在 body 中（CreateTenantDto 要求）
+    // - Units: organizationId 在 query 中（controller @Query 要求）
+    // - Organizations: 不需要 organizationId
+    if (auth?.organizationId && resource !== 'organizations') {
+      if (resource === 'tenants') {
+        // Tenants: organizationId 注入到 body 中
+        (variables as Record<string, unknown>).organizationId = auth.organizationId;
+      } else {
+        // Units 和其他资源: organizationId 作为 query 参数
+        url += `?organizationId=${auth.organizationId}`;
+      }
+    }
+    
+    const response = await httpClient.post<TData>(url, variables);
     return {
       data: response.data,
     };
@@ -191,11 +214,16 @@ async function update<TData extends BaseRecord = BaseRecord, TVariables = any>(
   params: UpdateParams<TVariables>
 ): Promise<UpdateResponse<TData>> {
   try {
-    const { resource, id, values } = params as UpdateParams<TVariables> & {
-      values: Record<string, unknown>;
-    };
-    const url = `${buildResourcePath(resource)}/${id}`;
-    const response = await httpClient.put<TData>(url, values);
+    const { resource, id, variables } = params;
+    let url = `${buildResourcePath(resource)}/${id}`;
+    
+    // 为非 organizations 资源添加 organizationId 查询参数
+    const auth = loadAuth();
+    if (auth?.organizationId && resource !== 'organizations') {
+      url += `?organizationId=${auth.organizationId}`;
+    }
+    
+    const response = await httpClient.put<TData>(url, variables);
     return {
       data: response.data,
     };
@@ -213,7 +241,14 @@ async function deleteOne<TData extends BaseRecord = BaseRecord, TVariables = any
 ): Promise<DeleteOneResponse<TData>> {
   try {
     const { resource, id } = params;
-    const url = `${buildResourcePath(resource)}/${id}`;
+    let url = `${buildResourcePath(resource)}/${id}`;
+    
+    // 为非 organizations 资源添加 organizationId 查询参数
+    const auth = loadAuth();
+    if (auth?.organizationId && resource !== 'organizations') {
+      url += `?organizationId=${auth.organizationId}`;
+    }
+    
     const response = await httpClient.delete<TData>(url);
     return {
       data: response.data || ({} as TData),

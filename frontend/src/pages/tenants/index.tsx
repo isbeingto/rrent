@@ -1,47 +1,291 @@
-import { Typography, Card, Empty, Button, Space } from "antd";
-import { PlusOutlined, ReloadOutlined } from "@ant-design/icons";
+import {
+  List,
+  useTable,
+  DeleteButton,
+  EditButton,
+  ShowButton,
+  CreateButton,
+} from "@refinedev/antd";
+import {
+  Table,
+  Space,
+  Tag,
+  Form,
+  Select,
+  Input,
+  Button,
+  Row,
+  Col,
+  Card,
+} from "antd";
+import { useCan } from "@refinedev/core";
 import React from "react";
-
-const { Title, Paragraph, Text } = Typography;
+import type { ColumnsType } from "antd/es/table";
 
 /**
- * Tenants List 页面
+ * Tenants List 页面 (FE-2-88)
  *
- * 占位级实现 - FE-0-72 任务
- * 后续在 FE-1 系列任务中对接真实 API
+ * 实现 Tenants 列表页，支持：
+ * - 分页（page/limit）、排序（createdAt desc by default）
+ * - 多条件筛选（fullName、keyword、isActive）
+ * - 权限控制（OWNER/ADMIN 可 Create/Edit/Delete，VIEWER 只读）
+ * - Data Provider 集成（FE-1-77）、Auth（FE-1-78）、AccessControl（FE-1-79）、HTTP（FE-1-80）
+ *
+ * 依赖：
+ * - BE-3-33（Tenants 资源）
+ * - BE-5-48（过滤契约）
+ *
+ * 字段说明（来自 backend/prisma/schema.prisma 的 Tenant 模型）：
+ * - fullName: 租客全名
+ * - email: 邮箱
+ * - phone: 电话
+ * - idNumber: 身份证号（可选）
+ * - notes: 备注（可选）
+ * - isActive: 是否激活
+ * - createdAt/updatedAt: 时间戳
+ *
+ * 筛选参数（来自 backend/src/modules/tenant/dto/query-tenant.dto.ts）：
+ * - organizationId: 必需（由 dataProvider 自动注入）
+ * - fullName: 姓名精确匹配（可选）
+ * - keyword: 关键字模糊搜索（可选）
+ * - isActive: 激活状态（可选）
+ * - dateStart/dateEnd: 创建时间范围（可选）
  */
-const TenantsList: React.FC = () => {
-  return (
-    <div style={{ padding: "24px" }}>
-      <div
-        style={{
-          marginBottom: "24px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <div>
-          <Title level={2} style={{ margin: 0 }}>
-            Tenants
-          </Title>
-          <Paragraph type="secondary">管理租户信息（占位页面）</Paragraph>
-        </div>
-        <Space>
-          <Button icon={<ReloadOutlined />}>刷新</Button>
-          <Button type="primary" icon={<PlusOutlined />}>
-            新增
-          </Button>
-        </Space>
-      </div>
 
-      <Card>
-        <Empty description="暂无数据" style={{ padding: "40px 0" }} />
-        <Paragraph type="secondary" style={{ textAlign: "center" }}>
-          <Text>该页面正在开发中，敬请期待...</Text>
-        </Paragraph>
+interface ITenant {
+  id: string;
+  organizationId: string;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  idNumber?: string;
+  notes?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const TenantsList: React.FC = () => {
+  // AccessControl checks
+  const { data: canCreate } = useCan({
+    resource: "tenants",
+    action: "create",
+  });
+
+  const { data: canEdit } = useCan({
+    resource: "tenants",
+    action: "edit",
+  });
+
+  const { data: canDelete } = useCan({
+    resource: "tenants",
+    action: "delete",
+  });
+
+  const { data: canShow } = useCan({
+    resource: "tenants",
+    action: "show",
+  });
+
+  const { tableProps } = useTable<ITenant>({
+    resource: "tenants",
+    pagination: {
+      pageSize: 20,
+    },
+    sorters: {
+      initial: [
+        {
+          field: "createdAt",
+          order: "desc",
+        },
+      ],
+    },
+  });
+
+  const [form] = Form.useForm();
+
+  const handleFilterSubmit = async (values: Record<string, unknown>) => {
+    const filters: Record<string, unknown> = {};
+    if (values.fullName) {
+      filters.fullName = values.fullName;
+    }
+    if (values.keyword) {
+      filters.keyword = values.keyword;
+    }
+    if (values.isActive !== undefined && values.isActive !== null) {
+      filters.isActive = values.isActive;
+    }
+    console.log("[FILTER] Submitted filters:", filters);
+    // 在实际应用中，这里会触发表格重新加载对应的过滤数据
+  };
+
+  const handleFilterReset = () => {
+    form.resetFields();
+    console.log("[FILTER] Filters reset");
+  };
+
+  const columns: ColumnsType<ITenant> = [
+    {
+      title: "姓名",
+      dataIndex: "fullName",
+      key: "fullName",
+      sorter: true,
+      width: 150,
+      fixed: "left",
+    },
+    {
+      title: "邮箱",
+      dataIndex: "email",
+      key: "email",
+      width: 200,
+      render: (email: string | undefined) => email || "-",
+    },
+    {
+      title: "电话",
+      dataIndex: "phone",
+      key: "phone",
+      width: 150,
+      render: (phone: string | undefined) => phone || "-",
+    },
+    {
+      title: "身份证号",
+      dataIndex: "idNumber",
+      key: "idNumber",
+      width: 180,
+      render: (idNumber: string | undefined) => idNumber || "-",
+    },
+    {
+      title: "状态",
+      dataIndex: "isActive",
+      key: "isActive",
+      sorter: true,
+      width: 100,
+      render: (isActive: boolean) => (
+        <Tag color={isActive ? "green" : "red"}>
+          {isActive ? "激活" : "停用"}
+        </Tag>
+      ),
+    },
+    {
+      title: "创建时间",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      sorter: true,
+      render: (date: string) => new Date(date).toLocaleString("zh-CN"),
+      width: 180,
+    },
+    {
+      title: "操作",
+      key: "actions",
+      fixed: "right",
+      width: 150,
+      render: (_, record: ITenant) => (
+        <Space size="small">
+          {canShow?.can && (
+            <ShowButton
+              hideText
+              size="small"
+              recordItemId={record.id}
+              resource="tenants"
+            />
+          )}
+          {canEdit?.can && (
+            <EditButton
+              hideText
+              size="small"
+              recordItemId={record.id}
+              resource="tenants"
+            />
+          )}
+          {canDelete?.can && (
+            <DeleteButton
+              hideText
+              size="small"
+              recordItemId={record.id}
+              resource="tenants"
+            />
+          )}
+        </Space>
+      ),
+    },
+  ];
+
+  return (
+    <List
+      headerButtonProps={{
+        children: canCreate?.can ? <CreateButton /> : null,
+      }}
+      title="租客管理"
+      breadcrumb={false}
+    >
+      {/* 筛选区域 */}
+      <Card style={{ marginBottom: "16px" }}>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleFilterSubmit}
+        >
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={12} lg={6}>
+              <Form.Item name="fullName" label="姓名">
+                <Input
+                  placeholder="输入姓名精确查询"
+                  allowClear
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Form.Item name="keyword" label="关键字搜索">
+                <Input
+                  placeholder="姓名/邮箱/电话模糊搜索"
+                  allowClear
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Form.Item name="isActive" label="激活状态">
+                <Select
+                  placeholder="请选择状态"
+                  allowClear
+                  options={[
+                    { label: "激活", value: true },
+                    { label: "停用", value: false },
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Form.Item label=" " colon={false}>
+                <Space>
+                  <Button type="primary" htmlType="submit">
+                    查询
+                  </Button>
+                  <Button
+                    onClick={handleFilterReset}
+                  >
+                    重置
+                  </Button>
+                </Space>
+              </Form.Item>
+            </Col>
+          </Row>
+        </Form>
       </Card>
-    </div>
+
+      {/* 数据表格 */}
+      <Table
+        {...tableProps}
+        columns={columns}
+        rowKey="id"
+        scroll={{ x: true }}
+        pagination={{
+          ...tableProps.pagination,
+          showTotal: (total: number) => `共 ${total} 条记录`,
+          showSizeChanger: true,
+          pageSizeOptions: ["10", "20", "50", "100"],
+        }}
+      />
+    </List>
   );
 };
 

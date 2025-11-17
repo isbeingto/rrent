@@ -5,9 +5,21 @@ import Dashboard from "@pages/dashboard";
 import NotFound from "@pages/not-found";
 import LoginPage from "@pages/auth/LoginPage";
 import OrganizationsList from "@pages/organizations";
+import OrganizationsCreate from "@pages/organizations/create";
+import OrganizationsEdit from "@pages/organizations/edit";
+import OrganizationsShow from "@pages/organizations/show";
 import PropertiesList from "@pages/properties";
+import PropertiesCreate from "@pages/properties/create";
+import PropertiesEdit from "@pages/properties/edit";
+import PropertiesShow from "@pages/properties/show";
 import UnitsList from "@pages/units";
+import UnitsCreate from "@pages/units/create";
+import UnitsEdit from "@pages/units/edit";
+import UnitsShow from "@pages/units/show";
 import TenantsList from "@pages/tenants";
+import TenantsCreate from "@pages/tenants/create";
+import TenantsEdit from "@pages/tenants/edit";
+import TenantsShow from "@pages/tenants/show";
 import LeasesList from "@pages/leases";
 import PaymentsList from "@pages/payments";
 
@@ -50,12 +62,42 @@ export default function AppRoutes() {
           element={<OrganizationsList />}
           handle={{ breadcrumb: "Organizations" }}
         />
+        <Route
+          path="organizations/create"
+          element={<OrganizationsCreate />}
+          handle={{ breadcrumb: "Create" }}
+        />
+        <Route
+          path="organizations/edit/:id"
+          element={<OrganizationsEdit />}
+          handle={{ breadcrumb: "Edit" }}
+        />
+        <Route
+          path="organizations/show/:id"
+          element={<OrganizationsShow />}
+          handle={{ breadcrumb: "Details" }}
+        />
 
         {/* Properties */}
         <Route
           path="properties"
           element={<PropertiesList />}
           handle={{ breadcrumb: "Properties" }}
+        />
+        <Route
+          path="properties/create"
+          element={<PropertiesCreate />}
+          handle={{ breadcrumb: "Create" }}
+        />
+        <Route
+          path="properties/edit/:id"
+          element={<PropertiesEdit />}
+          handle={{ breadcrumb: "Edit" }}
+        />
+        <Route
+          path="properties/show/:id"
+          element={<PropertiesShow />}
+          handle={{ breadcrumb: "Details" }}
         />
 
         {/* Units */}
@@ -64,12 +106,42 @@ export default function AppRoutes() {
           element={<UnitsList />}
           handle={{ breadcrumb: "Units" }}
         />
+        <Route
+          path="units/create"
+          element={<UnitsCreate />}
+          handle={{ breadcrumb: "Create" }}
+        />
+        <Route
+          path="units/edit/:id"
+          element={<UnitsEdit />}
+          handle={{ breadcrumb: "Edit" }}
+        />
+        <Route
+          path="units/show/:id"
+          element={<UnitsShow />}
+          handle={{ breadcrumb: "Details" }}
+        />
 
         {/* Tenants */}
         <Route
           path="tenants"
           element={<TenantsList />}
           handle={{ breadcrumb: "Tenants" }}
+        />
+        <Route
+          path="tenants/create"
+          element={<TenantsCreate />}
+          handle={{ breadcrumb: "Create" }}
+        />
+        <Route
+          path="tenants/edit/:id"
+          element={<TenantsEdit />}
+          handle={{ breadcrumb: "Edit" }}
+        />
+        <Route
+          path="tenants/show/:id"
+          element={<TenantsShow />}
+          handle={{ breadcrumb: "Details" }}
         />
 
         {/* Leases */}

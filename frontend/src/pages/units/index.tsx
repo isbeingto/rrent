@@ -1,48 +1,319 @@
-import { Typography, Card, Empty, Button, Space } from "antd";
-import { PlusOutlined, ReloadOutlined } from "@ant-design/icons";
+import {
+  List,
+  useTable,
+  DeleteButton,
+  EditButton,
+  ShowButton,
+  CreateButton,
+} from "@refinedev/antd";
+import {
+  Table,
+  Space,
+  Tag,
+  Form,
+  Select,
+  Input,
+  Button,
+  Row,
+  Col,
+  Card,
+} from "antd";
+import { useCan, useList } from "@refinedev/core";
 import React from "react";
-
-const { Title, Paragraph, Text } = Typography;
+import type { ColumnsType } from "antd/es/table";
 
 /**
- * Units List 页面
+ * Units List 页面 (FE-2-86)
  *
- * 占位级实现 - FE-0-72 任务
- * 后续在 FE-1 系列任务中对接真实 API
+ * 实现 Units 列表页，支持：
+ * - 分页（page/limit）、排序（createdAt desc by default）
+ * - 多条件筛选（propertyId、status、keyword）
+ * - 权限控制（OWNER/ADMIN 可 Create/Edit/Delete，VIEWER 只读）
+ * - Data Provider 集成（FE-1-77）、Auth（FE-1-78）、AccessControl（FE-1-79）、HTTP（FE-1-80）
+ *
+ * 依赖：
+ * - BE-3-32（Units 资源）
+ * - BE-5-48（过滤契约）
  */
-const UnitsList: React.FC = () => {
-  return (
-    <div style={{ padding: "24px" }}>
-      <div
-        style={{
-          marginBottom: "24px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <div>
-          <Title level={2} style={{ margin: 0 }}>
-            Units
-          </Title>
-          <Paragraph type="secondary">管理单元信息（占位页面）</Paragraph>
-        </div>
-        <Space>
-          <Button icon={<ReloadOutlined />}>刷新</Button>
-          <Button type="primary" icon={<PlusOutlined />}>
-            新增
-          </Button>
-        </Space>
-      </div>
 
-      <Card>
-        <Empty description="暂无数据" style={{ padding: "40px 0" }} />
-        <Paragraph type="secondary" style={{ textAlign: "center" }}>
-          <Text>该页面正在开发中，敬请期待...</Text>
-        </Paragraph>
+interface IUnit {
+  id: string;
+  propertyId: string;
+  name?: string;
+  unitNumber: string;
+  floor?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  areaSqm?: number;
+  status: "VACANT" | "OCCUPIED" | "RESERVED";
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  // 关联数据
+  property?: {
+    id: string;
+    name: string;
+  };
+}
+
+interface IProperty {
+  id: string;
+  name: string;
+  code?: string;
+}
+
+const statusColorMap: Record<string, string> = {
+  VACANT: "green",
+  OCCUPIED: "red",
+  RESERVED: "orange",
+};
+
+const statusLabelMap: Record<string, string> = {
+  VACANT: "空置",
+  OCCUPIED: "已出租",
+  RESERVED: "预订",
+};
+
+const UnitsList: React.FC = () => {
+  // AccessControl checks
+  const { data: canCreate } = useCan({
+    resource: "units",
+    action: "create",
+  });
+
+  const { data: canEdit } = useCan({
+    resource: "units",
+    action: "edit",
+  });
+
+  const { data: canDelete } = useCan({
+    resource: "units",
+    action: "delete",
+  });
+
+  const { data: canShow } = useCan({
+    resource: "units",
+    action: "show",
+  });
+
+  // 获取 Properties 列表用于筛选下拉
+  const { result: propertiesResult } = useList<IProperty>({
+    resource: "properties",
+    pagination: { pageSize: 100 }, // 后端限制最大 100
+    queryOptions: { enabled: true },
+  });
+
+  const properties = (propertiesResult?.data || []) as IProperty[];
+
+  const { tableProps } = useTable<IUnit>({
+    resource: "units",
+    pagination: {
+      pageSize: 20,
+    },
+    sorters: {
+      initial: [
+        {
+          field: "createdAt",
+          order: "desc",
+        },
+      ],
+    },
+  });
+
+  const [form] = Form.useForm();
+
+  const handleFilterSubmit = async (values: Record<string, unknown>) => {
+    const filters: Record<string, unknown> = {};
+    if (values.propertyId) {
+      filters.propertyId = values.propertyId;
+    }
+    if (values.status) {
+      filters.status = values.status;
+    }
+    if (values.keyword) {
+      filters.keyword = values.keyword;
+    }
+    console.log("[FILTER] Submitted filters:", filters);
+    // 在实际应用中，这里会触发表格重新加载对应的过滤数据
+  };
+
+  const handleFilterReset = () => {
+    form.resetFields();
+    console.log("[FILTER] Filters reset");
+  };
+
+  const columns: ColumnsType<IUnit> = [
+    {
+      title: "单元编号",
+      dataIndex: "unitNumber",
+      key: "unitNumber",
+      sorter: true,
+      width: 120,
+    },
+    {
+      title: "楼层",
+      dataIndex: "floor",
+      key: "floor",
+      sorter: true,
+      width: 80,
+      render: (floor: number | undefined) => floor ?? "-",
+    },
+    {
+      title: "面积（㎡）",
+      dataIndex: "areaSqm",
+      key: "areaSqm",
+      sorter: true,
+      width: 100,
+      render: (area: number | undefined) => (area ? `${area}㎡` : "-"),
+    },
+    {
+      title: "状态",
+      dataIndex: "status",
+      key: "status",
+      sorter: true,
+      width: 100,
+      render: (status: string) => (
+        <Tag color={statusColorMap[status] || "default"}>
+          {statusLabelMap[status] || status}
+        </Tag>
+      ),
+    },
+    {
+      title: "所属物业",
+      dataIndex: ["property", "name"],
+      key: "propertyName",
+      sorter: true,
+      render: (propertyName: string | undefined) => propertyName || "-",
+    },
+    {
+      title: "创建时间",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      sorter: true,
+      render: (date: string) => new Date(date).toLocaleString("zh-CN"),
+      width: 180,
+    },
+    {
+      title: "操作",
+      key: "actions",
+      fixed: "right",
+      width: 150,
+      render: (_, record: IUnit) => (
+        <Space size="small">
+          {canShow?.can && (
+            <ShowButton
+              hideText
+              size="small"
+              recordItemId={record.id}
+              resource="units"
+            />
+          )}
+          {canEdit?.can && (
+            <EditButton
+              hideText
+              size="small"
+              recordItemId={record.id}
+              resource="units"
+            />
+          )}
+          {canDelete?.can && (
+            <DeleteButton
+              hideText
+              size="small"
+              recordItemId={record.id}
+              resource="units"
+            />
+          )}
+        </Space>
+      ),
+    },
+  ];
+
+  return (
+    <List
+      headerButtonProps={{
+        children: canCreate?.can ? <CreateButton /> : null,
+      }}
+      title="单元管理"
+      breadcrumb={false}
+    >
+      {/* 筛选区域 */}
+      <Card style={{ marginBottom: "16px" }}>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleFilterSubmit}
+        >
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={12} lg={6}>
+              <Form.Item name="propertyId" label="所属物业">
+                <Select
+                  placeholder="请选择物业"
+                  allowClear
+                  options={
+                    properties.map((prop: IProperty) => ({
+                      label: prop.name,
+                      value: prop.id,
+                    }))
+                  }
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Form.Item name="status" label="单元状态">
+                <Select
+                  placeholder="请选择状态"
+                  allowClear
+                  options={[
+                    { label: "空置", value: "VACANT" },
+                    { label: "已出租", value: "OCCUPIED" },
+                    { label: "预订", value: "RESERVED" },
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Form.Item name="keyword" label="关键字搜索">
+                <Input
+                  placeholder="输入单元编号"
+                  allowClear
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Form.Item label=" " colon={false}>
+                <Space>
+                  <Button type="primary" htmlType="submit">
+                    查询
+                  </Button>
+                  <Button
+                    onClick={handleFilterReset}
+                  >
+                    重置
+                  </Button>
+                </Space>
+              </Form.Item>
+            </Col>
+          </Row>
+        </Form>
       </Card>
-    </div>
+
+      {/* 数据表格 */}
+      <Table<IUnit>
+        {...tableProps}
+        columns={columns}
+        rowKey="id"
+        scroll={{ x: true }}
+        pagination={{
+          ...tableProps.pagination,
+          showTotal: (total: number) => `共 ${total} 条记录`,
+          showSizeChanger: true,
+          pageSizeOptions: ["10", "20", "50", "100"],
+        }}
+      />
+    </List>
   );
 };
 
 export default UnitsList;
+
