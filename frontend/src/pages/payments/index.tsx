@@ -11,23 +11,37 @@ import {
   Row,
   Col,
   Card,
-  message,
+  Tooltip,
+  App,
 } from "antd";
-import { useCan } from "@refinedev/core";
-import React from "react";
+import { useCan, useInvalidate } from "@refinedev/core";
+import React, { useState } from "react";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
+import { DollarOutlined } from "@ant-design/icons";
 import { ResourceTable } from "../../shared/components/ResourceTable";
+import {
+  PaymentStatus,
+  type IPayment as IPaymentBase,
+  markPaymentAsPaid,
+  canMarkPaymentAsPaid,
+  getMarkPaidTooltip,
+} from "@shared/payments/markPaid";
+import {
+  computePaymentStatusMeta,
+  formatDueDateWithInfo,
+} from "@shared/payments/status";
 
 const { RangePicker } = DatePicker;
 
 /**
- * Payments List 页面 (FE-2-92, refactored in FE-2-94)
+ * Payments List 页面 (FE-2-92, refactored in FE-2-94, FE-3-97)
  *
  * 实现 Payments 列表页，支持：
  * - 分页（page/limit）、排序（dueDate asc by default）
  * - 多条件筛选（status、dueDateFrom/dueDateTo）
- * - 权限控制（OWNER/ADMIN 可标记已支付，所有角色可查看）
+ * - 权限控制（OWNER/ADMIN/PROPERTY_MGR/OPERATOR 可标记已支付，所有角色可查看）
+ * - FE-3-97: 内联"标记已付"功能
  * - Data Provider 集成（FE-1-77）、Auth（FE-1-78）、AccessControl（FE-1-79）、HTTP（FE-1-80）
  * - 使用通用 ResourceTable 组件（FE-2-94）
  *
@@ -56,26 +70,13 @@ const { RangePicker } = DatePicker;
  *
  * 注意：
  * - 后端默认排序：dueDate ASC（按 BE-7 文档）
- * - 标记已支付功能实现于 FE-2-93 任务
+ * - 标记已支付功能：FE-2-93 详情页 + FE-3-97 列表内联
  */
 
-// 支付状态枚举（与 backend/prisma/schema.prisma 保持一致）
-enum PaymentStatus {
-  PENDING = "PENDING",
-  PARTIAL = "PARTIAL",
-  PAID = "PAID",
-  OVERDUE = "OVERDUE",
-  CANCELED = "CANCELED",
-}
-
-interface IPayment {
-  id: string;
+interface IPayment extends IPaymentBase {
   organizationId: string;
   leaseId: string;
   type: string;
-  status: PaymentStatus;
-  amount: number;
-  currency: string;
   dueDate: string;
   paidAt?: string;
   notes?: string;
@@ -83,16 +84,11 @@ interface IPayment {
   updatedAt: string;
 }
 
-// 状态显示配置
-const statusConfig: Record<PaymentStatus, { color: string; text: string }> = {
-  [PaymentStatus.PENDING]: { color: "processing", text: "待支付" },
-  [PaymentStatus.PARTIAL]: { color: "warning", text: "部分支付" },
-  [PaymentStatus.PAID]: { color: "success", text: "已支付" },
-  [PaymentStatus.OVERDUE]: { color: "error", text: "已逾期" },
-  [PaymentStatus.CANCELED]: { color: "default", text: "已取消" },
-};
-
 const PaymentsList: React.FC = () => {
+  const invalidate = useInvalidate();
+  const { modal, message } = App.useApp();
+  const [markingPaymentId, setMarkingPaymentId] = useState<string | null>(null);
+
   // AccessControl checks for action buttons
   const { data: canEdit } = useCan({
     resource: "payments",
@@ -144,9 +140,30 @@ const PaymentsList: React.FC = () => {
     // Note: ResourceTable will handle resetting filters
   };
 
-  const handleMarkPaid = (paymentId: string) => {
-    // TODO: FE-2-93 任务实现真实的 markPaid 功能
-    message.info(`标记已支付功能开发中 (Payment ID: ${paymentId}) - 将在 FE-2-93 任务中实现`);
+  const handleMarkPaid = async (payment: IPayment) => {
+    const canMark = canMarkPaymentAsPaid(payment, canEdit?.can ?? false);
+    if (!canMark) {
+      return;
+    }
+
+    setMarkingPaymentId(payment.id);
+    try {
+      await markPaymentAsPaid({
+        payment,
+        message,
+        modal,
+        onSuccess: () => {
+          invalidate({
+            resource: "payments",
+            invalidates: ["list"],
+          });
+        },
+      });
+    } catch {
+      // Error already handled by markPaymentAsPaid
+    } finally {
+      setMarkingPaymentId(null);
+    }
   };
 
   const columns: ColumnsType<IPayment> = [
@@ -190,19 +207,40 @@ const PaymentsList: React.FC = () => {
       title: "状态",
       dataIndex: "status",
       key: "status",
-      width: 100,
-      render: (status: PaymentStatus) => {
-        const config = statusConfig[status] || { color: "default", text: status };
-        return <Tag color={config.color}>{config.text}</Tag>;
+      width: 140,
+      render: (_: string, record: IPayment) => {
+        const meta = computePaymentStatusMeta({
+          status: record.status,
+          dueDate: record.dueDate,
+          paidAt: record.paidAt,
+        });
+        
+        return (
+          <Tooltip title={meta.isUpcoming ? "即将到期" : undefined}>
+            <Tag color={meta.badgeColor}>
+              {meta.badgeText}
+              {meta.overdueDays !== null && meta.overdueDays > 0 && (
+                <span> ({meta.overdueDays}天)</span>
+              )}
+            </Tag>
+          </Tooltip>
+        );
       },
     },
     {
-      title: "到期日期",
+      title: "到期信息",
       dataIndex: "dueDate",
       key: "dueDate",
-      width: 120,
+      width: 200,
       sorter: true,
-      render: (dueDate: string) => dayjs(dueDate).format("YYYY-MM-DD"),
+      render: (_: string, record: IPayment) => {
+        const formatted = formatDueDateWithInfo({
+          status: record.status,
+          dueDate: record.dueDate,
+          paidAt: record.paidAt,
+        });
+        return <span style={{ fontSize: '13px' }}>{formatted}</span>;
+      },
     },
     {
       title: "实际支付日期",
@@ -223,22 +261,34 @@ const PaymentsList: React.FC = () => {
     {
       title: "操作",
       key: "actions",
-      width: 180,
+      width: 200,
       fixed: "right",
-      render: (_: unknown, record: IPayment) => (
-        <Space size="small">
-          {canShow?.can && <ShowButton hideText size="small" recordItemId={record.id} />}
-          {canEdit?.can && record.status !== PaymentStatus.PAID && (
-            <Button
-              type="link"
-              size="small"
-              onClick={() => handleMarkPaid(record.id)}
-            >
-              标记已支付
-            </Button>
-          )}
-        </Space>
-      ),
+      render: (_: unknown, record: IPayment) => {
+        const canMark = canMarkPaymentAsPaid(record, canEdit?.can ?? false);
+        const tooltip = getMarkPaidTooltip(record, canEdit?.can ?? false);
+        const isMarking = markingPaymentId === record.id;
+
+        return (
+          <Space size="small">
+            {canShow?.can && <ShowButton hideText size="small" recordItemId={record.id} />}
+            {canEdit?.can && (
+              <Tooltip title={tooltip}>
+                <Button
+                  type="link"
+                  size="small"
+                  icon={<DollarOutlined />}
+                  onClick={() => handleMarkPaid(record)}
+                  disabled={!canMark || isMarking}
+                  loading={isMarking}
+                  style={{ display: canMark || record.status === PaymentStatus.PENDING || record.status === PaymentStatus.OVERDUE ? "inline" : "none" }}
+                >
+                  标记已支付
+                </Button>
+              </Tooltip>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 
@@ -253,7 +303,7 @@ const PaymentsList: React.FC = () => {
                 <Select.Option value={PaymentStatus.PENDING}>
                   待支付
                 </Select.Option>
-                <Select.Option value={PaymentStatus.PARTIAL}>
+                <Select.Option value="PARTIAL">
                   部分支付
                 </Select.Option>
                 <Select.Option value={PaymentStatus.PAID}>

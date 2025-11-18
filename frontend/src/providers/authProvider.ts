@@ -32,6 +32,12 @@ interface BackendLoginResponse {
     fullName?: string;
     role?: string;
     organizationId: string;
+    organizationCode?: string;
+    organizations?: Array<{
+      id: string;
+      name: string;
+      code?: string;
+    }>;
     [key: string]: unknown;
   };
 }
@@ -61,12 +67,14 @@ async function login(params: LoginParams) {
     const authPayload: AuthPayload = {
       token: accessToken,
       organizationId: user.organizationId,
+      organizationCode: user.organizationCode,
       user: {
         id: user.id,
         email: user.email,
         fullName: user.fullName,
         role: user.role,
         roles: user.role ? [user.role] : [],
+        organizations: user.organizations, // FE-4-103: 保存组织列表（如果后端提供）
       },
     };
 

@@ -7,15 +7,26 @@
 
 const AUTH_STORAGE_KEY = "rrent_auth";
 
+/**
+ * 组织信息结构
+ */
+export interface OrganizationInfo {
+  id: string;
+  name: string;
+  code?: string;
+}
+
 export interface AuthPayload {
   token: string;
   organizationId: string;
+  organizationCode?: string;
   user: {
     id: string;
     email: string;
     fullName?: string;
     role?: string;
     roles?: string[];
+    organizations?: OrganizationInfo[];
   };
 }
 
@@ -67,3 +78,39 @@ export function clearAuth(): void {
     console.error("[Auth Storage] Failed to clear auth data:", error);
   }
 }
+
+/**
+ * 切换当前组织
+ * @param organizationId 新的组织 ID
+ * @param organizationCode 新的组织代码（可选）
+ */
+export function switchOrganization(organizationId: string, organizationCode?: string): void {
+  try {
+    const auth = loadAuth();
+    if (!auth) {
+      console.warn("[Auth Storage] Cannot switch organization: no auth data found");
+      return;
+    }
+
+    // 验证该组织是否在用户的组织列表中
+    if (auth.user.organizations && auth.user.organizations.length > 0) {
+      const targetOrg = auth.user.organizations.find(org => org.id === organizationId);
+      if (!targetOrg) {
+        console.warn(`[Auth Storage] Organization ${organizationId} not found in user's organizations`);
+        return;
+      }
+    }
+
+    // 更新当前组织
+    auth.organizationId = organizationId;
+    if (organizationCode) {
+      auth.organizationCode = organizationCode;
+    }
+
+    saveAuth(auth);
+    console.log(`[Auth Storage] Switched to organization: ${organizationId}`);
+  } catch (error) {
+    console.error("[Auth Storage] Failed to switch organization:", error);
+  }
+}
+

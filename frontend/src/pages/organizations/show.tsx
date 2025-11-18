@@ -34,6 +34,18 @@ const OrganizationsShow: React.FC = () => {
     params: { id: params.id },
   });
 
+  const { data: canEdit } = useCan({
+    resource: "organizations",
+    action: "edit",
+    params: { id: params.id },
+  });
+
+  const { data: canDelete } = useCan({
+    resource: "organizations",
+    action: "delete",
+    params: { id: params.id },
+  });
+
   // 如果无权限，重定向到列表页
   useEffect(() => {
     if (canShow && !canShow.can) {
@@ -50,7 +62,11 @@ const OrganizationsShow: React.FC = () => {
   const isLoading = query.isLoading;
 
   return (
-    <Show isLoading={isLoading}>
+    <Show 
+      isLoading={isLoading}
+      canEdit={canEdit?.can}
+      canDelete={canDelete?.can}
+    >
       <Descriptions
         title="组织详情"
         bordered

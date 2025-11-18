@@ -14,7 +14,7 @@ import {
 } from "@refinedev/core";
 import { AxiosError } from "axios";
 import httpClient from "@shared/api/http";
-import { loadAuth } from "@shared/auth/storage";
+import { getCurrentOrganizationId } from "@shared/auth/organization";
 
 /**
  * 自定义 Refine Data Provider
@@ -75,7 +75,7 @@ async function getList<TData extends BaseRecord = BaseRecord>(
   params: GetListParams
 ): Promise<GetListResponse<TData>> {
   try {
-    const { resource, pagination, sorters } = params;
+    const { resource, pagination, sorters, filters } = params;
     const url = buildResourcePath(resource);
 
     const queryParams: Record<string, unknown> = {};
@@ -84,9 +84,10 @@ async function getList<TData extends BaseRecord = BaseRecord>(
     // 根据后端实际契约（backend/test/pagination.e2e-spec.ts），
     // 大部分资源的 getList 需要 organizationId 作为 query 参数
     // 例外：organizations 资源不需要
-    const auth = loadAuth();
-    if (auth?.organizationId && resource !== 'organizations') {
-      queryParams.organizationId = auth.organizationId;
+    // FE-4-103: 使用统一的 getCurrentOrganizationId() helper
+    const organizationId = getCurrentOrganizationId();
+    if (organizationId && resource !== 'organizations') {
+      queryParams.organizationId = organizationId;
     }
 
     // 分页映射
@@ -105,6 +106,25 @@ async function getList<TData extends BaseRecord = BaseRecord>(
       const sorter = sorters[0];
       queryParams.sort = sorter.field;
       queryParams.order = sorter.order;
+    }
+
+    // FE-3-96: 过滤器映射
+    // 将 Refine 的 filters 转换为后端 query 参数
+    if (filters && filters.length > 0) {
+      filters.forEach((filter) => {
+        // 只处理简单的 CrudFilter 类型（ConditionalFilter 和 LogicalFilter 暂不支持）
+        if ('field' in filter && 'operator' in filter && 'value' in filter) {
+          const { field, operator, value } = filter;
+          
+          // 根据操作符映射到后端参数
+          if (operator === 'eq' || operator === 'contains') {
+            // 简单相等过滤：直接作为 query 参数
+            queryParams[field] = value;
+          }
+          // 其他操作符（ne, gt, gte, lt, lte, in, nin, between 等）暂不支持
+          // 如需扩展，可在此处添加对应的映射逻辑
+        }
+      });
     }
 
     const response = await httpClient.get<BackendListResponse>(url, {
@@ -158,9 +178,10 @@ async function getOne<TData extends BaseRecord = BaseRecord>(
     let url = `${buildResourcePath(resource)}/${id}`;
     
     // 为非 organizations 资源添加 organizationId 查询参数
-    const auth = loadAuth();
-    if (auth?.organizationId && resource !== 'organizations') {
-      url += `?organizationId=${auth.organizationId}`;
+    // FE-4-103: 使用统一的 getCurrentOrganizationId() helper
+    const organizationId = getCurrentOrganizationId();
+    if (organizationId && resource !== 'organizations') {
+      url += `?organizationId=${organizationId}`;
     }
     
     const response = await httpClient.get<TData>(url);
@@ -190,15 +211,16 @@ async function create<TData extends BaseRecord = BaseRecord, TVariables = any>(
     const { resource, variables } = params;
     let url = buildResourcePath(resource);
     
-    const auth = loadAuth();
+    // FE-4-103: 使用统一的 getCurrentOrganizationId() helper
+    const organizationId = getCurrentOrganizationId();
     
-    if (auth?.organizationId && resource !== 'organizations') {
+    if (organizationId && resource !== 'organizations') {
       if (resource === 'tenants' || resource === 'properties' || resource === 'leases') {
         // Tenants, Properties, Leases: organizationId 注入到 body 中
-        (variables as Record<string, unknown>).organizationId = auth.organizationId;
+        (variables as Record<string, unknown>).organizationId = organizationId;
       } else if (resource === 'units') {
         // Units: organizationId 作为 query 参数
-        url += `?organizationId=${auth.organizationId}`;
+        url += `?organizationId=${organizationId}`;
       }
       // 其他资源根据需要扩展
     }
@@ -224,9 +246,10 @@ async function update<TData extends BaseRecord = BaseRecord, TVariables = any>(
     let url = `${buildResourcePath(resource)}/${id}`;
     
     // 为非 organizations 资源添加 organizationId 查询参数
-    const auth = loadAuth();
-    if (auth?.organizationId && resource !== 'organizations') {
-      url += `?organizationId=${auth.organizationId}`;
+    // FE-4-103: 使用统一的 getCurrentOrganizationId() helper
+    const organizationId = getCurrentOrganizationId();
+    if (organizationId && resource !== 'organizations') {
+      url += `?organizationId=${organizationId}`;
     }
     
     const response = await httpClient.put<TData>(url, variables);
@@ -250,9 +273,10 @@ async function deleteOne<TData extends BaseRecord = BaseRecord, TVariables = any
     let url = `${buildResourcePath(resource)}/${id}`;
     
     // 为非 organizations 资源添加 organizationId 查询参数
-    const auth = loadAuth();
-    if (auth?.organizationId && resource !== 'organizations') {
-      url += `?organizationId=${auth.organizationId}`;
+    // FE-4-103: 使用统一的 getCurrentOrganizationId() helper
+    const organizationId = getCurrentOrganizationId();
+    if (organizationId && resource !== 'organizations') {
+      url += `?organizationId=${organizationId}`;
     }
     
     const response = await httpClient.delete<TData>(url);

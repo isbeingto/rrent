@@ -37,6 +37,18 @@ const TenantsShow: React.FC = () => {
     params: { id: params.id },
   });
 
+  const { data: canEdit } = useCan({
+    resource: "tenants",
+    action: "edit",
+    params: { id: params.id },
+  });
+
+  const { data: canDelete } = useCan({
+    resource: "tenants",
+    action: "delete",
+    params: { id: params.id },
+  });
+
   // 如果无权限，重定向到列表页
   useEffect(() => {
     if (canShow && !canShow.can) {
@@ -66,7 +78,11 @@ const TenantsShow: React.FC = () => {
   };
 
   return (
-    <Show isLoading={isLoading}>
+    <Show 
+      isLoading={isLoading}
+      canEdit={canEdit?.can}
+      canDelete={canDelete?.can}
+    >
       <Descriptions
         title="租客详情"
         bordered

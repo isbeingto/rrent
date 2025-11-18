@@ -248,10 +248,8 @@ describe("DataProvider - High-Intensity Unit Tests (FE-1-82)", () => {
 
       await dataProvider.getList(params);
 
-      // 注意：当前实现的 dataProvider 不处理 filters
-      // 这个测试记录了当前行为：filters 被忽略
-      // 如果未来需要支持 filters，需要修改 dataProvider.ts
-      // FE-2-90: 修正后，getList 包含 organizationId query 参数
+      // FE-3-96: 实现了 filters 映射，支持 eq 和 contains 操作符
+      // getList 现在会将 filters 映射为 query 参数
       expect(mockedHttpClient.get).toHaveBeenCalledWith(
         "/tenants",
         expect.objectContaining({
@@ -259,13 +257,14 @@ describe("DataProvider - High-Intensity Unit Tests (FE-1-82)", () => {
             page: 1,
             limit: 20,
             organizationId: "org-123",
+            status: "ACTIVE", // FE-3-96: 过滤器现在会被映射
           }),
         })
       );
 
-      // 当前实现不包含 status 参数（因为未实现 filters 映射）
+      // FE-3-96: 验证 status 参数已被包含
       const callParams = mockedHttpClient.get.mock.calls[0][1]?.params;
-      expect(callParams).not.toHaveProperty("status");
+      expect(callParams).toHaveProperty("status", "ACTIVE");
     });
 
     it("should handle keyword/search filter (if implemented)", async () => {
@@ -903,5 +902,244 @@ describe("DataProvider - High-Intensity Unit Tests (FE-1-82)", () => {
       expect(callArgs[1]?.params).not.toHaveProperty("organizationId");
     });
   });
-});
 
+  describe("FE-4-103: Organization Switching", () => {
+    it("should use new organizationId after switching organizations - getList", async () => {
+      // 初始组织: orgA
+      mockedAuthStorage.loadAuth.mockReturnValueOnce({
+        token: "mock-token",
+        organizationId: "orgA",
+        user: { id: "user-1", email: "test@example.com" },
+      });
+
+      const mockResponse = {
+        data: {
+          items: [{ id: "1", name: "Tenant A" }],
+          meta: { total: 1, page: 1, pageSize: 20, pageCount: 1 },
+        },
+        headers: {},
+      };
+      mockedHttpClient.get.mockResolvedValue(mockResponse);
+
+      // 第一次请求 - 使用 orgA
+      await dataProvider.getList({ resource: "tenants" });
+
+      expect(mockedHttpClient.get).toHaveBeenCalledWith(
+        "/tenants",
+        expect.objectContaining({
+          params: expect.objectContaining({
+            organizationId: "orgA",
+          }),
+        })
+      );
+
+      // 切换到 orgB
+      mockedAuthStorage.loadAuth.mockReturnValueOnce({
+        token: "mock-token",
+        organizationId: "orgB",
+        user: { id: "user-1", email: "test@example.com" },
+      });
+
+      // 第二次请求 - 应该使用 orgB
+      await dataProvider.getList({ resource: "tenants" });
+
+      expect(mockedHttpClient.get).toHaveBeenLastCalledWith(
+        "/tenants",
+        expect.objectContaining({
+          params: expect.objectContaining({
+            organizationId: "orgB",
+          }),
+        })
+      );
+    });
+
+    it("should use new organizationId after switching organizations - getOne", async () => {
+      mockedAuthStorage.loadAuth
+        .mockReturnValueOnce({
+          token: "mock-token",
+          organizationId: "orgA",
+          user: { id: "user-1", email: "test@example.com" },
+        })
+        .mockReturnValueOnce({
+          token: "mock-token",
+          organizationId: "orgB",
+          user: { id: "user-1", email: "test@example.com" },
+        });
+
+      const mockResponse = { data: { id: "unit-1", name: "Unit 101" } };
+      mockedHttpClient.get.mockResolvedValue(mockResponse);
+
+      // 请求 1: orgA
+      await dataProvider.getOne({ resource: "units", id: "unit-1" });
+      expect(mockedHttpClient.get).toHaveBeenCalledWith("/units/unit-1?organizationId=orgA");
+
+      // 请求 2: orgB
+      await dataProvider.getOne({ resource: "units", id: "unit-1" });
+      expect(mockedHttpClient.get).toHaveBeenCalledWith("/units/unit-1?organizationId=orgB");
+    });
+
+    it("should use new organizationId after switching organizations - create (body injection)", async () => {
+      mockedAuthStorage.loadAuth
+        .mockReturnValueOnce({
+          token: "mock-token",
+          organizationId: "orgA",
+          user: { id: "user-1", email: "test@example.com" },
+        })
+        .mockReturnValueOnce({
+          token: "mock-token",
+          organizationId: "orgB",
+          user: { id: "user-1", email: "test@example.com" },
+        });
+
+      const mockResponse = { data: { id: "tenant-1", name: "New Tenant" } };
+      mockedHttpClient.post.mockResolvedValue(mockResponse);
+
+      // 创建 tenant (orgA)
+      await dataProvider.create({
+        resource: "tenants",
+        variables: { name: "New Tenant" },
+      });
+
+      expect(mockedHttpClient.post).toHaveBeenCalledWith(
+        "/tenants",
+        expect.objectContaining({
+          name: "New Tenant",
+          organizationId: "orgA",
+        })
+      );
+
+      // 创建 tenant (orgB)
+      await dataProvider.create({
+        resource: "tenants",
+        variables: { name: "Another Tenant" },
+      });
+
+      expect(mockedHttpClient.post).toHaveBeenLastCalledWith(
+        "/tenants",
+        expect.objectContaining({
+          name: "Another Tenant",
+          organizationId: "orgB",
+        })
+      );
+    });
+
+    it("should use new organizationId after switching organizations - create (query param)", async () => {
+      mockedAuthStorage.loadAuth
+        .mockReturnValueOnce({
+          token: "mock-token",
+          organizationId: "orgA",
+          user: { id: "user-1", email: "test@example.com" },
+        })
+        .mockReturnValueOnce({
+          token: "mock-token",
+          organizationId: "orgB",
+          user: { id: "user-1", email: "test@example.com" },
+        });
+
+      const mockResponse = { data: { id: "unit-1", name: "New Unit" } };
+      mockedHttpClient.post.mockResolvedValue(mockResponse);
+
+      // 创建 unit (orgA) - organizationId 在 query
+      await dataProvider.create({
+        resource: "units",
+        variables: { name: "New Unit", propertyId: "prop-1" },
+      });
+
+      expect(mockedHttpClient.post).toHaveBeenCalledWith(
+        "/units?organizationId=orgA",
+        expect.objectContaining({
+          name: "New Unit",
+          propertyId: "prop-1",
+        })
+      );
+
+      // 创建 unit (orgB)
+      await dataProvider.create({
+        resource: "units",
+        variables: { name: "Another Unit", propertyId: "prop-1" },
+      });
+
+      expect(mockedHttpClient.post).toHaveBeenLastCalledWith(
+        "/units?organizationId=orgB",
+        expect.objectContaining({
+          name: "Another Unit",
+          propertyId: "prop-1",
+        })
+      );
+    });
+
+    it("should use new organizationId after switching organizations - update", async () => {
+      mockedAuthStorage.loadAuth
+        .mockReturnValueOnce({
+          token: "mock-token",
+          organizationId: "orgA",
+          user: { id: "user-1", email: "test@example.com" },
+        })
+        .mockReturnValueOnce({
+          token: "mock-token",
+          organizationId: "orgB",
+          user: { id: "user-1", email: "test@example.com" },
+        });
+
+      const mockResponse = { data: { id: "lease-1", status: "active" } };
+      mockedHttpClient.put.mockResolvedValue(mockResponse);
+
+      // 更新 (orgA)
+      await dataProvider.update({
+        resource: "leases",
+        id: "lease-1",
+        variables: { status: "active" },
+      });
+
+      expect(mockedHttpClient.put).toHaveBeenCalledWith(
+        "/leases/lease-1?organizationId=orgA",
+        expect.objectContaining({ status: "active" })
+      );
+
+      // 更新 (orgB)
+      await dataProvider.update({
+        resource: "leases",
+        id: "lease-1",
+        variables: { status: "terminated" },
+      });
+
+      expect(mockedHttpClient.put).toHaveBeenLastCalledWith(
+        "/leases/lease-1?organizationId=orgB",
+        expect.objectContaining({ status: "terminated" })
+      );
+    });
+
+    it("should use new organizationId after switching organizations - delete", async () => {
+      mockedAuthStorage.loadAuth
+        .mockReturnValueOnce({
+          token: "mock-token",
+          organizationId: "orgA",
+          user: { id: "user-1", email: "test@example.com" },
+        })
+        .mockReturnValueOnce({
+          token: "mock-token",
+          organizationId: "orgB",
+          user: { id: "user-1", email: "test@example.com" },
+        });
+
+      const mockResponse = { data: {} };
+      mockedHttpClient.delete.mockResolvedValue(mockResponse);
+
+      // 删除 (orgA)
+      await dataProvider.deleteOne({
+        resource: "payments",
+        id: "payment-1",
+      });
+
+      expect(mockedHttpClient.delete).toHaveBeenCalledWith("/payments/payment-1?organizationId=orgA");
+
+      // 删除 (orgB)
+      await dataProvider.deleteOne({
+        resource: "payments",
+        id: "payment-2",
+      });
+
+      expect(mockedHttpClient.delete).toHaveBeenLastCalledWith("/payments/payment-2?organizationId=orgB");
+    });
+  });
+});

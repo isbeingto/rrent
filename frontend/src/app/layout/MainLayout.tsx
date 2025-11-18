@@ -3,6 +3,7 @@ import { Layout, Typography, Breadcrumb, Button, theme } from "antd";
 import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
 import { Outlet, useLocation } from "react-router";
 import SiderNav from "./SiderNav";
+import OrgSwitcher from "./OrgSwitcher";
 import { NAV_ITEMS } from "@shared/nav";
 
 const { Header, Sider, Content } = Layout;
@@ -112,6 +113,8 @@ export default function MainLayout() {
             id="user-slot"
             style={{ display: "flex", alignItems: "center", gap: "16px" }}
           >
+            {/* FE-4-103: 组织切换器 */}
+            <OrgSwitcher />
             {/* FE-0-72 接入用户信息与退出登录 */}
           </div>
         </Header>

@@ -12,7 +12,8 @@
 
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from "axios";
 import { API_BASE_URL } from "@shared/config/env";
-import { loadAuth } from "@shared/auth/storage";
+import { loadAuth, clearAuth } from "@shared/auth/storage";
+import { getCurrentOrganizationId } from "@shared/auth/organization";
 
 /**
  * 后端错误响应结构
@@ -50,6 +51,7 @@ const httpClient: AxiosInstance = axios.create({
  * 请求拦截器：自动注入 JWT Token 和组织信息
  * 
  * FE-1-80: 从 auth storage 读取 token 和 organizationId，注入到请求头
+ * FE-4-103: 使用统一的 getCurrentOrganizationId() helper
  */
 httpClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
@@ -62,9 +64,10 @@ httpClient.interceptors.request.use(
           config.headers.Authorization = `Bearer ${auth.token}`;
         }
 
-        // 2. 注入组织信息
-        if (auth.organizationId) {
-          config.headers["X-Organization-Id"] = auth.organizationId;
+        // 2. 注入组织信息（使用 helper 确保始终使用最新的当前组织）
+        const currentOrgId = getCurrentOrganizationId();
+        if (currentOrgId) {
+          config.headers["X-Organization-Id"] = currentOrgId;
         }
 
         // 3. 开发模式调试日志（不打印完整 token）
@@ -73,7 +76,7 @@ httpClient.interceptors.request.use(
             url: config.url,
             method: config.method?.toUpperCase(),
             hasToken: !!auth.token,
-            orgId: auth.organizationId,
+            orgId: currentOrgId,
             role: auth.user?.role || auth.user?.roles?.[0],
           });
         }
@@ -137,8 +140,14 @@ httpClient.interceptors.response.use(
           if (process.env.NODE_ENV !== "production") {
             console.warn("[HTTP] 401 Unauthorized - redirecting to login");
           }
-          // 清除 auth 并跳转由 authProvider.onError 处理
-          // 这里只是记录日志，实际跳转由 Refine 的 authProvider 触发
+          
+          // 清除 auth 状态
+          clearAuth();
+          
+          // 避免死循环：如果当前已经在 login 页面，不再重定向
+          if (!window.location.pathname.startsWith("/login")) {
+            window.location.href = "/login";
+          }
           break;
 
         case 403:

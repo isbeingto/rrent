@@ -1,7 +1,7 @@
 import { Create, useForm, useSelect } from "@refinedev/antd";
 import { Form, Input, InputNumber, DatePicker, Select } from "antd";
 import { useCan } from "@refinedev/core";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import React, { useEffect } from "react";
 import dayjs from "dayjs";
 
@@ -58,6 +58,11 @@ const statusLabels: Record<LeaseStatus, string> = {
 
 const LeasesCreate: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  // 从 URL 读取预填参数
+  const prefilledUnitId = searchParams.get("unitId");
+  const prefilledPropertyId = searchParams.get("propertyId");
   
   const { data: canCreate } = useCan({
     resource: "leases",
@@ -71,11 +76,21 @@ const LeasesCreate: React.FC = () => {
     }
   }, [canCreate, navigate]);
 
-  const { formProps, saveButtonProps } = useForm({
+  const { formProps, saveButtonProps, form } = useForm({
     resource: "leases",
     action: "create",
     redirect: "list",
   });
+
+  // 当预填参数存在时，设置表单初始值
+  useEffect(() => {
+    if (prefilledUnitId || prefilledPropertyId) {
+      const initialValues: Record<string, string> = {};
+      if (prefilledUnitId) initialValues.unitId = prefilledUnitId;
+      if (prefilledPropertyId) initialValues.propertyId = prefilledPropertyId;
+      form?.setFieldsValue(initialValues);
+    }
+  }, [prefilledUnitId, prefilledPropertyId, form]);
 
   // 加载租客列表
   const { selectProps: tenantSelectProps } = useSelect({
@@ -133,6 +148,7 @@ const LeasesCreate: React.FC = () => {
           <Select
             {...propertySelectProps}
             placeholder="请选择物业"
+            disabled={!!prefilledPropertyId}
             showSearch
             filterOption={(input, option) =>
               (option?.label?.toString() ?? "").toLowerCase().includes(input.toLowerCase())
@@ -148,6 +164,7 @@ const LeasesCreate: React.FC = () => {
           <Select
             {...unitSelectProps}
             placeholder="请选择单元"
+            disabled={!!prefilledUnitId}
             showSearch
             filterOption={(input, option) =>
               (option?.label?.toString() ?? "").toLowerCase().includes(input.toLowerCase())
@@ -162,7 +179,7 @@ const LeasesCreate: React.FC = () => {
           getValueProps={(value) => ({
             value: value ? dayjs(value) : undefined,
           })}
-          normalize={(value) => (value ? value.format("YYYY-MM-DD") : undefined)}
+          normalize={(value) => (value ? value.toISOString() : undefined)}
         >
           <DatePicker style={{ width: "100%" }} placeholder="请选择开始日期" />
         </Form.Item>
@@ -173,7 +190,7 @@ const LeasesCreate: React.FC = () => {
           getValueProps={(value) => ({
             value: value ? dayjs(value) : undefined,
           })}
-          normalize={(value) => (value ? value.format("YYYY-MM-DD") : undefined)}
+          normalize={(value) => (value ? value.toISOString() : undefined)}
         >
           <DatePicker style={{ width: "100%" }} placeholder="请选择结束日期（可选）" />
         </Form.Item>

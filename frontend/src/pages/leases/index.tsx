@@ -88,9 +88,9 @@ interface ILease {
   billCycle: BillCycle;
   startDate: string;
   endDate?: string;
-  rentAmount: number;
+  rentAmount: number | string; // Prisma Decimal 可能返回字符串
   currency: string;
-  depositAmount?: number;
+  depositAmount?: number | string | null; // Prisma Decimal 可能返回字符串或 null
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -184,8 +184,10 @@ const LeasesList: React.FC = () => {
       key: "rentAmount",
       sorter: true,
       width: 120,
-      render: (amount: number, record: ILease) =>
-        `${record.currency} ${amount.toFixed(2)}`,
+      render: (amount: number | string, record: ILease) => {
+        const numAmount = typeof amount === 'number' ? amount : parseFloat(amount?.toString() || '0');
+        return `${record.currency} ${isNaN(numAmount) ? '0.00' : numAmount.toFixed(2)}`;
+      },
     },
     {
       title: "计费周期",
@@ -230,8 +232,11 @@ const LeasesList: React.FC = () => {
       dataIndex: "depositAmount",
       key: "depositAmount",
       width: 120,
-      render: (amount: number | undefined, record: ILease) =>
-        amount !== undefined ? `${record.currency} ${amount.toFixed(2)}` : "-",
+      render: (amount: number | string | null | undefined, record: ILease) => {
+        if (amount === null || amount === undefined) return "-";
+        const numAmount = typeof amount === 'number' ? amount : parseFloat(amount?.toString() || '0');
+        return `${record.currency} ${isNaN(numAmount) ? '0.00' : numAmount.toFixed(2)}`;
+      },
     },
     {
       title: "创建时间",
