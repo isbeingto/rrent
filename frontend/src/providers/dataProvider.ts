@@ -80,8 +80,10 @@ async function getList<TData extends BaseRecord = BaseRecord>(
 
     const queryParams: Record<string, unknown> = {};
 
-    // 注入 organizationId（后端要求所有列表查询必须包含）
-    // 但 organizations 资源不需要，因为它仅通过 X-Organization-Id 头部传递
+    // FE-2-90: 修正 organizationId 处理
+    // 根据后端实际契约（backend/test/pagination.e2e-spec.ts），
+    // 大部分资源的 getList 需要 organizationId 作为 query 参数
+    // 例外：organizations 资源不需要
     const auth = loadAuth();
     if (auth?.organizationId && resource !== 'organizations') {
       queryParams.organizationId = auth.organizationId;
@@ -172,6 +174,13 @@ async function getOne<TData extends BaseRecord = BaseRecord>(
 
 /**
  * 创建记录
+ * 
+ * 根据后端 API 契约：
+ * - Tenants: organizationId 在 body 中（CreateTenantDto 要求）
+ * - Units: organizationId 作为 query 参数（controller @Query 要求）
+ * - Properties: organizationId 在 body 中（CreatePropertyDto 要求）
+ * - Leases: organizationId 在 body 中（CreateLeaseDto 要求）- FE-2-91
+ * - Organizations: 不需要 organizationId
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function create<TData extends BaseRecord = BaseRecord, TVariables = any>(
@@ -183,18 +192,15 @@ async function create<TData extends BaseRecord = BaseRecord, TVariables = any>(
     
     const auth = loadAuth();
     
-    // 根据后端 API 约定处理 organizationId：
-    // - Tenants: organizationId 在 body 中（CreateTenantDto 要求）
-    // - Units: organizationId 在 query 中（controller @Query 要求）
-    // - Organizations: 不需要 organizationId
     if (auth?.organizationId && resource !== 'organizations') {
-      if (resource === 'tenants') {
-        // Tenants: organizationId 注入到 body 中
+      if (resource === 'tenants' || resource === 'properties' || resource === 'leases') {
+        // Tenants, Properties, Leases: organizationId 注入到 body 中
         (variables as Record<string, unknown>).organizationId = auth.organizationId;
-      } else {
-        // Units 和其他资源: organizationId 作为 query 参数
+      } else if (resource === 'units') {
+        // Units: organizationId 作为 query 参数
         url += `?organizationId=${auth.organizationId}`;
       }
+      // 其他资源根据需要扩展
     }
     
     const response = await httpClient.post<TData>(url, variables);

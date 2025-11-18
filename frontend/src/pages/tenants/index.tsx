@@ -1,13 +1,9 @@
 import {
-  List,
-  useTable,
   DeleteButton,
   EditButton,
   ShowButton,
-  CreateButton,
 } from "@refinedev/antd";
 import {
-  Table,
   Space,
   Tag,
   Form,
@@ -21,15 +17,17 @@ import {
 import { useCan } from "@refinedev/core";
 import React from "react";
 import type { ColumnsType } from "antd/es/table";
+import { ResourceTable } from "../../shared/components/ResourceTable";
 
 /**
- * Tenants List 页面 (FE-2-88)
+ * Tenants List 页面 (FE-2-88, refactored in FE-2-94)
  *
  * 实现 Tenants 列表页，支持：
  * - 分页（page/limit）、排序（createdAt desc by default）
  * - 多条件筛选（fullName、keyword、isActive）
  * - 权限控制（OWNER/ADMIN 可 Create/Edit/Delete，VIEWER 只读）
  * - Data Provider 集成（FE-1-77）、Auth（FE-1-78）、AccessControl（FE-1-79）、HTTP（FE-1-80）
+ * - 使用通用 ResourceTable 组件（FE-2-94）
  *
  * 依赖：
  * - BE-3-33（Tenants 资源）
@@ -66,12 +64,7 @@ interface ITenant {
 }
 
 const TenantsList: React.FC = () => {
-  // AccessControl checks
-  const { data: canCreate } = useCan({
-    resource: "tenants",
-    action: "create",
-  });
-
+  // AccessControl checks for action buttons
   const { data: canEdit } = useCan({
     resource: "tenants",
     action: "edit",
@@ -85,21 +78,6 @@ const TenantsList: React.FC = () => {
   const { data: canShow } = useCan({
     resource: "tenants",
     action: "show",
-  });
-
-  const { tableProps } = useTable<ITenant>({
-    resource: "tenants",
-    pagination: {
-      pageSize: 20,
-    },
-    sorters: {
-      initial: [
-        {
-          field: "createdAt",
-          order: "desc",
-        },
-      ],
-    },
   });
 
   const [form] = Form.useForm();
@@ -210,82 +188,71 @@ const TenantsList: React.FC = () => {
     },
   ];
 
-  return (
-    <List
-      headerButtonProps={{
-        children: canCreate?.can ? <CreateButton /> : null,
-      }}
-      title="租客管理"
-      breadcrumb={false}
-    >
-      {/* 筛选区域 */}
-      <Card style={{ marginBottom: "16px" }}>
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleFilterSubmit}
-        >
-          <Row gutter={[16, 16]}>
-            <Col xs={24} sm={12} lg={6}>
-              <Form.Item name="fullName" label="姓名">
-                <Input
-                  placeholder="输入姓名精确查询"
-                  allowClear
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <Form.Item name="keyword" label="关键字搜索">
-                <Input
-                  placeholder="姓名/邮箱/电话模糊搜索"
-                  allowClear
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <Form.Item name="isActive" label="激活状态">
-                <Select
-                  placeholder="请选择状态"
-                  allowClear
-                  options={[
-                    { label: "激活", value: true },
-                    { label: "停用", value: false },
-                  ]}
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <Form.Item label=" " colon={false}>
-                <Space>
-                  <Button type="primary" htmlType="submit">
-                    查询
-                  </Button>
-                  <Button
-                    onClick={handleFilterReset}
-                  >
-                    重置
-                  </Button>
-                </Space>
-              </Form.Item>
-            </Col>
-          </Row>
-        </Form>
-      </Card>
+  // 筛选区域组件
+  const filtersComponent = (
+    <Card>
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={handleFilterSubmit}
+      >
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} lg={6}>
+            <Form.Item name="fullName" label="姓名">
+              <Input
+                placeholder="输入姓名精确查询"
+                allowClear
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Form.Item name="keyword" label="关键字搜索">
+              <Input
+                placeholder="姓名/邮箱/电话模糊搜索"
+                allowClear
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Form.Item name="isActive" label="激活状态">
+              <Select
+                placeholder="请选择状态"
+                allowClear
+                options={[
+                  { label: "激活", value: true },
+                  { label: "停用", value: false },
+                ]}
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Form.Item label=" " colon={false}>
+              <Space>
+                <Button type="primary" htmlType="submit">
+                  查询
+                </Button>
+                <Button
+                  onClick={handleFilterReset}
+                >
+                  重置
+                </Button>
+              </Space>
+            </Form.Item>
+          </Col>
+        </Row>
+      </Form>
+    </Card>
+  );
 
-      {/* 数据表格 */}
-      <Table
-        {...tableProps}
-        columns={columns}
-        rowKey="id"
-        scroll={{ x: true }}
-        pagination={{
-          ...tableProps.pagination,
-          showTotal: (total: number) => `共 ${total} 条记录`,
-          showSizeChanger: true,
-          pageSizeOptions: ["10", "20", "50", "100"],
-        }}
-      />
-    </List>
+  return (
+    <ResourceTable<ITenant>
+      resource="tenants"
+      title="租客管理"
+      columns={columns}
+      filters={filtersComponent}
+      defaultPageSize={20}
+      defaultSorter={{ field: "createdAt", order: "desc" }}
+    />
   );
 };
 

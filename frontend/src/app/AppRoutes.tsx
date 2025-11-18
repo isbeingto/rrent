@@ -21,7 +21,11 @@ import TenantsCreate from "@pages/tenants/create";
 import TenantsEdit from "@pages/tenants/edit";
 import TenantsShow from "@pages/tenants/show";
 import LeasesList from "@pages/leases";
+import LeasesCreate from "@pages/leases/create";
+import LeasesEdit from "@pages/leases/edit";
+import LeasesShow from "@pages/leases/show";
 import PaymentsList from "@pages/payments";
+import PaymentsShow from "@pages/payments/show";
 
 /**
  * 应用路由配置
@@ -150,12 +154,32 @@ export default function AppRoutes() {
           element={<LeasesList />}
           handle={{ breadcrumb: "Leases" }}
         />
+        <Route
+          path="leases/create"
+          element={<LeasesCreate />}
+          handle={{ breadcrumb: "Create" }}
+        />
+        <Route
+          path="leases/edit/:id"
+          element={<LeasesEdit />}
+          handle={{ breadcrumb: "Edit" }}
+        />
+        <Route
+          path="leases/show/:id"
+          element={<LeasesShow />}
+          handle={{ breadcrumb: "Details" }}
+        />
 
         {/* Payments */}
         <Route
           path="payments"
           element={<PaymentsList />}
           handle={{ breadcrumb: "Payments" }}
+        />
+        <Route
+          path="payments/show/:id"
+          element={<PaymentsShow />}
+          handle={{ breadcrumb: "Details" }}
         />
 
         {/* 404 页面 */}

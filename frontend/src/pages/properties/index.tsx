@@ -1,13 +1,15 @@
-import { List, useTable, DeleteButton, EditButton, ShowButton, CreateButton } from "@refinedev/antd";
-import { Table, Space, Tag } from "antd";
+import { DeleteButton, EditButton, ShowButton } from "@refinedev/antd";
+import { Space, Tag } from "antd";
 import { useCan } from "@refinedev/core";
 import React from "react";
 import type { ColumnsType } from "antd/es/table";
+import { ResourceTable } from "@shared/components/ResourceTable";
 
 /**
  * Properties List 页面
  *
  * FE-2-84: 基于 Organizations CRUD 模式实现完整 Properties 列表
+ * FE-2-94: 重构使用通用 ResourceTable 组件
  * - 列表展示：name, code, address, status, createdAt
  * - 分页、排序支持（默认按 createdAt desc）
  * - AccessControl 集成：按钮权限控制
@@ -32,12 +34,7 @@ interface IProperty {
 }
 
 const PropertiesList: React.FC = () => {
-  // AccessControl checks
-  const { data: canCreate } = useCan({
-    resource: "properties",
-    action: "create",
-  });
-  
+  // AccessControl checks for action buttons
   const { data: canEdit } = useCan({
     resource: "properties",
     action: "edit",
@@ -51,21 +48,6 @@ const PropertiesList: React.FC = () => {
   const { data: canShow } = useCan({
     resource: "properties",
     action: "show",
-  });
-
-  const { tableProps } = useTable<IProperty>({
-    resource: "properties",
-    pagination: {
-      pageSize: 20,
-    },
-    sorters: {
-      initial: [
-        {
-          field: "createdAt",
-          order: "desc",
-        },
-      ],
-    },
   });
 
   const columns: ColumnsType<IProperty> = [
@@ -148,21 +130,12 @@ const PropertiesList: React.FC = () => {
   ];
 
   return (
-    <List
-      headerButtons={({ defaultButtons }) => (
-        <>
-          {defaultButtons}
-          {canCreate?.can && <CreateButton />}
-        </>
-      )}
-    >
-      <Table
-        {...tableProps}
-        columns={columns}
-        rowKey="id"
-        scroll={{ x: 1200 }}
-      />
-    </List>
+    <ResourceTable<IProperty>
+      resource="properties"
+      columns={columns}
+      defaultPageSize={20}
+      defaultSorter={{ field: "createdAt", order: "desc" }}
+    />
   );
 };
 

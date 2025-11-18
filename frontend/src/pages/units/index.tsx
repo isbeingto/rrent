@@ -1,13 +1,9 @@
 import {
-  List,
-  useTable,
   DeleteButton,
   EditButton,
   ShowButton,
-  CreateButton,
 } from "@refinedev/antd";
 import {
-  Table,
   Space,
   Tag,
   Form,
@@ -21,10 +17,12 @@ import {
 import { useCan, useList } from "@refinedev/core";
 import React from "react";
 import type { ColumnsType } from "antd/es/table";
+import { ResourceTable } from "@shared/components/ResourceTable";
 
 /**
  * Units List 页面 (FE-2-86)
  *
+ * FE-2-94: 重构使用通用 ResourceTable 组件
  * 实现 Units 列表页，支持：
  * - 分页（page/limit）、排序（createdAt desc by default）
  * - 多条件筛选（propertyId、status、keyword）
@@ -75,12 +73,7 @@ const statusLabelMap: Record<string, string> = {
 };
 
 const UnitsList: React.FC = () => {
-  // AccessControl checks
-  const { data: canCreate } = useCan({
-    resource: "units",
-    action: "create",
-  });
-
+  // AccessControl checks for action buttons
   const { data: canEdit } = useCan({
     resource: "units",
     action: "edit",
@@ -104,21 +97,6 @@ const UnitsList: React.FC = () => {
   });
 
   const properties = (propertiesResult?.data || []) as IProperty[];
-
-  const { tableProps } = useTable<IUnit>({
-    resource: "units",
-    pagination: {
-      pageSize: 20,
-    },
-    sorters: {
-      initial: [
-        {
-          field: "createdAt",
-          order: "desc",
-        },
-      ],
-    },
-  });
 
   const [form] = Form.useForm();
 
@@ -229,89 +207,78 @@ const UnitsList: React.FC = () => {
     },
   ];
 
-  return (
-    <List
-      headerButtonProps={{
-        children: canCreate?.can ? <CreateButton /> : null,
-      }}
-      title="单元管理"
-      breadcrumb={false}
-    >
-      {/* 筛选区域 */}
-      <Card style={{ marginBottom: "16px" }}>
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleFilterSubmit}
-        >
-          <Row gutter={[16, 16]}>
-            <Col xs={24} sm={12} lg={6}>
-              <Form.Item name="propertyId" label="所属物业">
-                <Select
-                  placeholder="请选择物业"
-                  allowClear
-                  options={
-                    properties.map((prop: IProperty) => ({
-                      label: prop.name,
-                      value: prop.id,
-                    }))
-                  }
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <Form.Item name="status" label="单元状态">
-                <Select
-                  placeholder="请选择状态"
-                  allowClear
-                  options={[
-                    { label: "空置", value: "VACANT" },
-                    { label: "已出租", value: "OCCUPIED" },
-                    { label: "预订", value: "RESERVED" },
-                  ]}
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <Form.Item name="keyword" label="关键字搜索">
-                <Input
-                  placeholder="输入单元编号"
-                  allowClear
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <Form.Item label=" " colon={false}>
-                <Space>
-                  <Button type="primary" htmlType="submit">
-                    查询
-                  </Button>
-                  <Button
-                    onClick={handleFilterReset}
-                  >
-                    重置
-                  </Button>
-                </Space>
-              </Form.Item>
-            </Col>
-          </Row>
-        </Form>
-      </Card>
+  // 筛选区域组件
+  const filtersComponent = (
+    <Card>
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={handleFilterSubmit}
+      >
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} lg={6}>
+            <Form.Item name="propertyId" label="所属物业">
+              <Select
+                placeholder="请选择物业"
+                allowClear
+                options={
+                  properties.map((prop: IProperty) => ({
+                    label: prop.name,
+                    value: prop.id,
+                  }))
+                }
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Form.Item name="status" label="单元状态">
+              <Select
+                placeholder="请选择状态"
+                allowClear
+                options={[
+                  { label: "空置", value: "VACANT" },
+                  { label: "已出租", value: "OCCUPIED" },
+                  { label: "预订", value: "RESERVED" },
+                ]}
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Form.Item name="keyword" label="关键字搜索">
+              <Input
+                placeholder="输入单元编号"
+                allowClear
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Form.Item label=" " colon={false}>
+              <Space>
+                <Button type="primary" htmlType="submit">
+                  查询
+                </Button>
+                <Button
+                  onClick={handleFilterReset}
+                >
+                  重置
+                </Button>
+              </Space>
+            </Form.Item>
+          </Col>
+        </Row>
+      </Form>
+    </Card>
+  );
 
-      {/* 数据表格 */}
-      <Table<IUnit>
-        {...tableProps}
-        columns={columns}
-        rowKey="id"
-        scroll={{ x: true }}
-        pagination={{
-          ...tableProps.pagination,
-          showTotal: (total: number) => `共 ${total} 条记录`,
-          showSizeChanger: true,
-          pageSizeOptions: ["10", "20", "50", "100"],
-        }}
-      />
-    </List>
+  return (
+    <ResourceTable<IUnit>
+      resource="units"
+      title="单元管理"
+      columns={columns}
+      filters={filtersComponent}
+      defaultPageSize={20}
+      defaultSorter={{ field: "createdAt", order: "desc" }}
+    />
   );
 };
 

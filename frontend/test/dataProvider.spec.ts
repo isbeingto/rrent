@@ -66,7 +66,7 @@ describe("DataProvider - High-Intensity Unit Tests (FE-1-82)", () => {
 
       await dataProvider.getList(params);
 
-      // 验证请求参数：默认 page=1, limit=20
+      // FE-2-90: 修正后，getList 应该包含 organizationId query 参数（除 organizations 外）
       expect(mockedHttpClient.get).toHaveBeenCalledWith(
         "/tenants",
         expect.objectContaining({
@@ -98,7 +98,7 @@ describe("DataProvider - High-Intensity Unit Tests (FE-1-82)", () => {
 
       const result = await dataProvider.getList(params);
 
-      // 验证请求参数：page=3, limit=50
+      // FE-2-90: 修正后，getList 应该包含 organizationId query 参数
       expect(mockedHttpClient.get).toHaveBeenCalledWith(
         "/properties",
         expect.objectContaining({
@@ -134,13 +134,14 @@ describe("DataProvider - High-Intensity Unit Tests (FE-1-82)", () => {
 
       await dataProvider.getList(params);
 
-      // 验证：极端页码被如实传递，不做前端截断
+      // FE-2-90: 修正后，验证包含 organizationId
       expect(mockedHttpClient.get).toHaveBeenCalledWith(
         "/units",
         expect.objectContaining({
           params: expect.objectContaining({
             page: 999,
             limit: 100,
+            organizationId: "org-123",
           }),
         })
       );
@@ -170,7 +171,7 @@ describe("DataProvider - High-Intensity Unit Tests (FE-1-82)", () => {
 
       await dataProvider.getList(params);
 
-      // 验证排序映射：sort=createdAt, order=desc
+      // FE-2-90: 修正后，验证排序映射并包含 organizationId
       expect(mockedHttpClient.get).toHaveBeenCalledWith(
         "/leases",
         expect.objectContaining({
@@ -250,6 +251,7 @@ describe("DataProvider - High-Intensity Unit Tests (FE-1-82)", () => {
       // 注意：当前实现的 dataProvider 不处理 filters
       // 这个测试记录了当前行为：filters 被忽略
       // 如果未来需要支持 filters，需要修改 dataProvider.ts
+      // FE-2-90: 修正后，getList 包含 organizationId query 参数
       expect(mockedHttpClient.get).toHaveBeenCalledWith(
         "/tenants",
         expect.objectContaining({
@@ -474,7 +476,7 @@ describe("DataProvider - High-Intensity Unit Tests (FE-1-82)", () => {
       });
     });
 
-    it("should support create operation", async () => {
+    it("should support create operation for properties (organizationId in body)", async () => {
       httpClient.post = jest.fn().mockResolvedValue({
         data: { id: "new-1", name: "New Property" },
       });
@@ -484,8 +486,10 @@ describe("DataProvider - High-Intensity Unit Tests (FE-1-82)", () => {
         variables: { name: "New Property" },
       });
 
-      expect(httpClient.post).toHaveBeenCalledWith("/properties?organizationId=org-123", {
+      // Properties: organizationId should be injected into body (like tenants)
+      expect(httpClient.post).toHaveBeenCalledWith("/properties", {
         name: "New Property",
+        organizationId: "org-123",
       });
       expect(result).toEqual({
         data: { id: "new-1", name: "New Property" },
@@ -613,4 +617,291 @@ describe("DataProvider - High-Intensity Unit Tests (FE-1-82)", () => {
       ).rejects.toThrow("custom not implemented yet");
     });
   });
+
+  /**
+   * FE-2-89: API Contract Tests for Units and Tenants
+   * 
+   * 严格验证 Units 和 Tenants 资源的 API 契约：
+   * - organizationId 在哪些操作中作为 query 参数
+   * - organizationId 在哪些操作中作为 body 参数
+   * - 确保与后端 controller 实现完全一致
+   */
+  describe("API Contract: Units (FE-2-89)", () => {
+    it("GET /units - should include organizationId in query params", async () => {
+      const mockResponse = {
+        data: {
+          items: [{ id: "unit-1", unitNumber: "101" }],
+          meta: { total: 1, page: 1, pageSize: 20, pageCount: 1 },
+        },
+        headers: {},
+      };
+      mockedHttpClient.get.mockResolvedValue(mockResponse);
+
+      await dataProvider.getList({ resource: "units" });
+
+      // FE-2-90: 修正后，getList 应该包含 organizationId query 参数
+      const callArgs = mockedHttpClient.get.mock.calls[0];
+      expect(callArgs[0]).toBe("/units");
+      expect(callArgs[1]?.params).toHaveProperty("organizationId", "org-123");
+    });
+
+    it("GET /units/:id - should include organizationId in query params", async () => {
+      const mockResponse = {
+        data: { id: "unit-1", unitNumber: "101" },
+        headers: {},
+      };
+      mockedHttpClient.get.mockResolvedValue(mockResponse);
+
+      await dataProvider.getOne({ resource: "units", id: "unit-1" });
+
+      // 验证：getOne 必须包含 organizationId query 参数
+      expect(mockedHttpClient.get).toHaveBeenCalledWith(
+        "/units/unit-1?organizationId=org-123"
+      );
+    });
+
+    it("POST /units - should include organizationId in query params", async () => {
+      const mockResponse = {
+        data: { id: "unit-1", unitNumber: "101" },
+      };
+      mockedHttpClient.post.mockResolvedValue(mockResponse);
+
+      await dataProvider.create({
+        resource: "units",
+        variables: { unitNumber: "101", propertyId: "prop-1" },
+      });
+
+      // 验证：create 必须包含 organizationId query 参数，不在 body 中
+      const callArgs = mockedHttpClient.post.mock.calls[0];
+      expect(callArgs[0]).toBe("/units?organizationId=org-123");
+      expect(callArgs[1]).not.toHaveProperty("organizationId");
+    });
+
+    it("PUT /units/:id - should include organizationId in query params", async () => {
+      const mockResponse = {
+        data: { id: "unit-1", unitNumber: "102" },
+      };
+      mockedHttpClient.put.mockResolvedValue(mockResponse);
+
+      await dataProvider.update({
+        resource: "units",
+        id: "unit-1",
+        variables: { unitNumber: "102" },
+      });
+
+      // 验证：update 必须包含 organizationId query 参数
+      expect(mockedHttpClient.put).toHaveBeenCalledWith(
+        "/units/unit-1?organizationId=org-123",
+        { unitNumber: "102" }
+      );
+    });
+
+    it("DELETE /units/:id - should include organizationId in query params", async () => {
+      const mockResponse = { data: {} };
+      mockedHttpClient.delete.mockResolvedValue(mockResponse);
+
+      await dataProvider.deleteOne({ resource: "units", id: "unit-1" });
+
+      // 验证：delete 必须包含 organizationId query 参数
+      expect(mockedHttpClient.delete).toHaveBeenCalledWith(
+        "/units/unit-1?organizationId=org-123"
+      );
+    });
+  });
+
+  describe("API Contract: Tenants (FE-2-89)", () => {
+    it("GET /tenants - should include organizationId in query params", async () => {
+      const mockResponse = {
+        data: {
+          items: [{ id: "tenant-1", fullName: "张三" }],
+          meta: { total: 1, page: 1, pageSize: 20, pageCount: 1 },
+        },
+        headers: {},
+      };
+      mockedHttpClient.get.mockResolvedValue(mockResponse);
+
+      await dataProvider.getList({ resource: "tenants" });
+
+      // FE-2-90: 修正后，getList 应该包含 organizationId query 参数
+      const callArgs = mockedHttpClient.get.mock.calls[0];
+      expect(callArgs[0]).toBe("/tenants");
+      expect(callArgs[1]?.params).toHaveProperty("organizationId", "org-123");
+    });
+
+    it("GET /tenants/:id - should include organizationId in query params", async () => {
+      const mockResponse = {
+        data: { id: "tenant-1", fullName: "张三" },
+        headers: {},
+      };
+      mockedHttpClient.get.mockResolvedValue(mockResponse);
+
+      await dataProvider.getOne({ resource: "tenants", id: "tenant-1" });
+
+      // 验证：getOne 必须包含 organizationId query 参数
+      expect(mockedHttpClient.get).toHaveBeenCalledWith(
+        "/tenants/tenant-1?organizationId=org-123"
+      );
+    });
+
+    it("POST /tenants - should include organizationId in body, NOT in query", async () => {
+      const mockResponse = {
+        data: { id: "tenant-1", fullName: "张三" },
+      };
+      mockedHttpClient.post.mockResolvedValue(mockResponse);
+
+      await dataProvider.create({
+        resource: "tenants",
+        variables: { fullName: "张三", email: "zhang@example.com", phone: "13800138000" },
+      });
+
+      // 验证：create 必须包含 organizationId 在 body 中，不在 query 中
+      const callArgs = mockedHttpClient.post.mock.calls[0];
+      expect(callArgs[0]).toBe("/tenants");
+      expect(callArgs[1]).toHaveProperty("organizationId", "org-123");
+      expect(callArgs[1]).toHaveProperty("fullName", "张三");
+    });
+
+    it("PUT /tenants/:id - should include organizationId in query params", async () => {
+      const mockResponse = {
+        data: { id: "tenant-1", fullName: "李四" },
+      };
+      mockedHttpClient.put.mockResolvedValue(mockResponse);
+
+      await dataProvider.update({
+        resource: "tenants",
+        id: "tenant-1",
+        variables: { fullName: "李四" },
+      });
+
+      // 验证：update 必须包含 organizationId query 参数
+      expect(mockedHttpClient.put).toHaveBeenCalledWith(
+        "/tenants/tenant-1?organizationId=org-123",
+        { fullName: "李四" }
+      );
+    });
+
+    it("DELETE /tenants/:id - should include organizationId in query params", async () => {
+      const mockResponse = { data: {} };
+      mockedHttpClient.delete.mockResolvedValue(mockResponse);
+
+      await dataProvider.deleteOne({ resource: "tenants", id: "tenant-1" });
+
+      // 验证：delete 必须包含 organizationId query 参数
+      expect(mockedHttpClient.delete).toHaveBeenCalledWith(
+        "/tenants/tenant-1?organizationId=org-123"
+      );
+    });
+  });
+
+  describe("API Contract: Leases (FE-2-91)", () => {
+    it("GET /leases - should include organizationId in query params", async () => {
+      const mockResponse = {
+        data: {
+          items: [{ id: "lease-1", tenantId: "tenant-1", unitId: "unit-1" }],
+          meta: { total: 1, page: 1, pageSize: 20, pageCount: 1 },
+        },
+        headers: {},
+      };
+      mockedHttpClient.get.mockResolvedValue(mockResponse);
+
+      await dataProvider.getList({ resource: "leases" });
+
+      // 验证：getList 应该包含 organizationId query 参数
+      const callArgs = mockedHttpClient.get.mock.calls[0];
+      expect(callArgs[0]).toBe("/leases");
+      expect(callArgs[1]?.params).toHaveProperty("organizationId", "org-123");
+    });
+
+    it("GET /leases/:id - should include organizationId in query params", async () => {
+      const mockResponse = {
+        data: { id: "lease-1", tenantId: "tenant-1", unitId: "unit-1" },
+        headers: {},
+      };
+      mockedHttpClient.get.mockResolvedValue(mockResponse);
+
+      await dataProvider.getOne({ resource: "leases", id: "lease-1" });
+
+      // 验证：getOne 必须包含 organizationId query 参数
+      expect(mockedHttpClient.get).toHaveBeenCalledWith(
+        "/leases/lease-1?organizationId=org-123"
+      );
+    });
+
+    it("POST /leases - should include organizationId in body, NOT in query", async () => {
+      const mockResponse = {
+        data: { id: "lease-1", tenantId: "tenant-1", unitId: "unit-1" },
+      };
+      mockedHttpClient.post.mockResolvedValue(mockResponse);
+
+      await dataProvider.create({
+        resource: "leases",
+        variables: {
+          tenantId: "tenant-1",
+          unitId: "unit-1",
+          propertyId: "property-1",
+          startDate: "2025-01-01",
+          rentAmount: 1000,
+          billCycle: "MONTHLY",
+        },
+      });
+
+      // 验证：create 必须包含 organizationId 在 body 中，不在 query 中
+      const callArgs = mockedHttpClient.post.mock.calls[0];
+      expect(callArgs[0]).toBe("/leases");
+      expect(callArgs[1]).toHaveProperty("organizationId", "org-123");
+      expect(callArgs[1]).toHaveProperty("tenantId", "tenant-1");
+    });
+
+    it("PUT /leases/:id - should include organizationId in query params", async () => {
+      const mockResponse = {
+        data: { id: "lease-1", rentAmount: 1200 },
+      };
+      mockedHttpClient.put.mockResolvedValue(mockResponse);
+
+      await dataProvider.update({
+        resource: "leases",
+        id: "lease-1",
+        variables: { rentAmount: 1200 },
+      });
+
+      // 验证：update 必须包含 organizationId query 参数
+      expect(mockedHttpClient.put).toHaveBeenCalledWith(
+        "/leases/lease-1?organizationId=org-123",
+        { rentAmount: 1200 }
+      );
+    });
+
+    it("DELETE /leases/:id - should include organizationId in query params", async () => {
+      const mockResponse = { data: {} };
+      mockedHttpClient.delete.mockResolvedValue(mockResponse);
+
+      await dataProvider.deleteOne({ resource: "leases", id: "lease-1" });
+
+      // 验证：delete 必须包含 organizationId query 参数
+      expect(mockedHttpClient.delete).toHaveBeenCalledWith(
+        "/leases/lease-1?organizationId=org-123"
+      );
+    });
+  });
+
+  describe("API Contract: Organizations (baseline)", () => {
+    it("should NOT inject organizationId for any operation on organizations resource", async () => {
+      const mockResponse = {
+        data: {
+          items: [{ id: "org-1", name: "Test Org" }],
+          meta: { total: 1, page: 1, pageSize: 20, pageCount: 1 },
+        },
+        headers: {},
+      };
+      mockedHttpClient.get.mockResolvedValue(mockResponse);
+
+      await dataProvider.getList({ resource: "organizations" });
+
+      // 验证：organizations 资源不应包含 organizationId
+      const callArgs = mockedHttpClient.get.mock.calls[0];
+      expect(callArgs[0]).toBe("/organizations");
+      expect(callArgs[1]?.params).not.toHaveProperty("organizationId");
+    });
+  });
 });
+

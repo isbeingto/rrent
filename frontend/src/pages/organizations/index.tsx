@@ -1,13 +1,15 @@
-import { List, useTable, DeleteButton, EditButton, ShowButton, CreateButton } from "@refinedev/antd";
-import { Table, Space } from "antd";
+import { DeleteButton, EditButton, ShowButton } from "@refinedev/antd";
+import { Space } from "antd";
 import { useCan } from "@refinedev/core";
 import React from "react";
 import type { ColumnsType } from "antd/es/table";
+import { ResourceTable } from "@shared/components/ResourceTable";
 
 /**
  * Organizations List 页面
  *
  * FE-2-83: 完整 CRUD 实现，对接真实 dataProvider
+ * FE-2-94: 重构使用通用 ResourceTable 组件
  * - 列表展示：name, code, description, createdAt, updatedAt
  * - 分页、排序支持
  * - AccessControl 集成：按钮权限控制
@@ -24,12 +26,7 @@ interface IOrganization {
 }
 
 const OrganizationsList: React.FC = () => {
-  // AccessControl checks
-  const { data: canCreate } = useCan({
-    resource: "organizations",
-    action: "create",
-  });
-  
+  // AccessControl checks for action buttons
   const { data: canEdit } = useCan({
     resource: "organizations",
     action: "edit",
@@ -43,21 +40,6 @@ const OrganizationsList: React.FC = () => {
   const { data: canShow } = useCan({
     resource: "organizations",
     action: "show",
-  });
-
-  const { tableProps } = useTable<IOrganization>({
-    resource: "organizations",
-    pagination: {
-      pageSize: 20,
-    },
-    sorters: {
-      initial: [
-        {
-          field: "createdAt",
-          order: "desc",
-        },
-      ],
-    },
   });
 
   const columns: ColumnsType<IOrganization> = [
@@ -135,21 +117,12 @@ const OrganizationsList: React.FC = () => {
   ];
 
   return (
-    <List
-      headerButtons={({ defaultButtons }) => (
-        <>
-          {defaultButtons}
-          {canCreate?.can && <CreateButton />}
-        </>
-      )}
-    >
-      <Table
-        {...tableProps}
-        columns={columns}
-        rowKey="id"
-        scroll={{ x: 1200 }}
-      />
-    </List>
+    <ResourceTable<IOrganization>
+      resource="organizations"
+      columns={columns}
+      defaultPageSize={20}
+      defaultSorter={{ field: "createdAt", order: "desc" }}
+    />
   );
 };
 
