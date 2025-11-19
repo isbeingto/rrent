@@ -1,0 +1,27 @@
+{
+  "page": {
+    "title": "租客管理",
+    "listTitle": "租客列表",
+    "createTitle": "创建租客",
+    "editTitle": "编辑租客",
+    "showTitle": "租客详情"
+  },
+  "columns": {
+    "name": "姓名",
+    "email": "邮箱",
+    "phone": "电话",
+    "idNumber": "身份证号",
+    "status": "状态",
+    "createdAt": "创建时间",
+    "actions": "操作"
+  },
+  "status": {
+    "active": "激活",
+    "inactive": "停用"
+  },
+  "filters": {
+    "namePlaceholder": "输入姓名精确查询",
+    "keyword": "关键字搜索",
+    "keywordPlaceholder": "姓名/邮箱/电话模糊搜索"
+  }
+}

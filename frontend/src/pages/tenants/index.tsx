@@ -15,6 +15,7 @@ import {
   Card,
 } from "antd";
 import { useCan } from "@refinedev/core";
+import { useTranslation } from "react-i18next";
 import React from "react";
 import type { ColumnsType } from "antd/es/table";
 import { ResourceTable } from "../../shared/components/ResourceTable";
@@ -64,6 +65,7 @@ interface ITenant {
 }
 
 const TenantsList: React.FC = () => {
+  const { t } = useTranslation();
   // AccessControl checks for action buttons
   const { data: canEdit } = useCan({
     resource: "tenants",
@@ -98,65 +100,71 @@ const TenantsList: React.FC = () => {
   };
 
   const handleFilterReset = () => {
+
     form.resetFields();
     console.log("[FILTER] Filters reset");
   };
 
   const columns: ColumnsType<ITenant> = [
     {
-      title: "姓名",
+      title: t("tenants:columns.name", "姓名"),
       dataIndex: "fullName",
       key: "fullName",
       sorter: true,
       width: 150,
       fixed: "left",
+      ellipsis: true,
     },
     {
-      title: "邮箱",
+      title: t("tenants:columns.email", "邮箱"),
       dataIndex: "email",
       key: "email",
       width: 200,
+      ellipsis: true,
       render: (email: string | undefined) => email || "-",
     },
     {
-      title: "电话",
+      title: t("tenants:columns.phone", "电话"),
       dataIndex: "phone",
       key: "phone",
       width: 150,
       render: (phone: string | undefined) => phone || "-",
     },
     {
-      title: "身份证号",
+      title: t("tenants:columns.idNumber", "身份证号"),
       dataIndex: "idNumber",
       key: "idNumber",
       width: 180,
+      ellipsis: true,
       render: (idNumber: string | undefined) => idNumber || "-",
     },
     {
-      title: "状态",
+      title: t("tenants:columns.status", "状态"),
       dataIndex: "isActive",
       key: "isActive",
       sorter: true,
       width: 100,
       render: (isActive: boolean) => (
         <Tag color={isActive ? "green" : "red"}>
-          {isActive ? "激活" : "停用"}
+          {isActive ? t("tenants:status.active", "激活") : t("tenants:status.inactive", "停用")}
         </Tag>
       ),
     },
     {
-      title: "创建时间",
+      title: t("tenants:columns.createdAt", "创建时间"),
       dataIndex: "createdAt",
       key: "createdAt",
       sorter: true,
-      render: (date: string) => new Date(date).toLocaleString("zh-CN"),
-      width: 180,
+      render: (date: string) => new Date(date).toLocaleDateString("zh-CN"),
+      width: 120,
+      align: "center",
     },
     {
-      title: "操作",
+      title: t("tenants:columns.actions", "操作"),
       key: "actions",
       fixed: "right",
-      width: 150,
+      width: 100,
+      align: "center",
       render: (_, record: ITenant) => (
         <Space size="small">
           {canShow?.can && (
@@ -198,29 +206,29 @@ const TenantsList: React.FC = () => {
       >
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={12} lg={6}>
-            <Form.Item name="fullName" label="姓名">
+            <Form.Item name="fullName" label={t("tenants:columns.name", "姓名")}>
               <Input
-                placeholder="输入姓名精确查询"
+                placeholder={t("tenants:filters.namePlaceholder", "输入姓名精确查询")}
                 allowClear
               />
             </Form.Item>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Form.Item name="keyword" label="关键字搜索">
+            <Form.Item name="keyword" label={t("tenants:filters.keyword", "关键字搜索")}>
               <Input
-                placeholder="姓名/邮箱/电话模糊搜索"
+                placeholder={t("tenants:filters.keywordPlaceholder", "姓名/邮箱/电话模糊搜索")}
                 allowClear
               />
             </Form.Item>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Form.Item name="isActive" label="激活状态">
+            <Form.Item name="isActive" label={t("tenants:columns.status", "激活状态")}>
               <Select
-                placeholder="请选择状态"
+                placeholder={t("common:actions.select", "请选择状态")}
                 allowClear
                 options={[
-                  { label: "激活", value: true },
-                  { label: "停用", value: false },
+                  { label: t("tenants:status.active", "激活"), value: true },
+                  { label: t("tenants:status.inactive", "停用"), value: false },
                 ]}
               />
             </Form.Item>
@@ -229,12 +237,12 @@ const TenantsList: React.FC = () => {
             <Form.Item label=" " colon={false}>
               <Space>
                 <Button type="primary" htmlType="submit">
-                  查询
+                  {t("common:actions.search", "查询")}
                 </Button>
                 <Button
                   onClick={handleFilterReset}
                 >
-                  重置
+                  {t("common:actions.reset", "重置")}
                 </Button>
               </Space>
             </Form.Item>
@@ -247,7 +255,7 @@ const TenantsList: React.FC = () => {
   return (
     <ResourceTable<ITenant>
       resource="tenants"
-      title="租客管理"
+      title={t("tenants:page.listTitle", "租客管理")}
       columns={columns}
       filters={filtersComponent}
       defaultPageSize={20}

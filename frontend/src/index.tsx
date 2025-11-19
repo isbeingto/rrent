@@ -1,5 +1,6 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
+import "./i18n"; // 引入 i18n 初始化
 
 import App from "./App";
 

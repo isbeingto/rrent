@@ -1,0 +1,42 @@
+{
+  "page": {
+    "title": "财务管理",
+    "listTitle": "支付记录",
+    "showTitle": "支付详情"
+  },
+  "columns": {
+    "id": "支付单 ID",
+    "leaseId": "租约 ID",
+    "lease": "关联租约",
+    "type": "类型",
+    "amount": "金额",
+    "status": "状态",
+    "dueDate": "应付日期",
+    "paidAt": "实付日期",
+    "notes": "备注",
+    "createdAt": "创建时间",
+    "updatedAt": "更新时间",
+    "actions": "操作"
+  },
+  "status": {
+    "pending": "待支付",
+    "paid": "已支付",
+    "overdue": "已逾期",
+    "partial": "部分支付",
+    "canceled": "已取消"
+  },
+  "dueInfo": {
+    "paid": "已结清",
+    "paidAt": "已于 {{date}} 支付",
+    "overdue": "逾期 {{days}} 天",
+    "toDue": "剩余 {{days}} 天"
+  },
+  "actions": {
+    "markPaid": "标记为已支付"
+  },
+  "alerts": {
+    "overdue": "此账单已逾期，请尽快处理",
+    "toDue": "此账单即将到期",
+    "paid": "此账单已完成支付"
+  }
+}

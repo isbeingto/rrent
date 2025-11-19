@@ -15,6 +15,7 @@ import {
   App,
 } from "antd";
 import { useCan, useInvalidate } from "@refinedev/core";
+import { useTranslation } from "react-i18next";
 import React, { useState } from "react";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
@@ -85,6 +86,7 @@ interface IPayment extends IPaymentBase {
 }
 
 const PaymentsList: React.FC = () => {
+  const { t } = useTranslation();
   const invalidate = useInvalidate();
   const { modal, message } = App.useApp();
   const [markingPaymentId, setMarkingPaymentId] = useState<string | null>(null);
@@ -99,6 +101,7 @@ const PaymentsList: React.FC = () => {
     resource: "payments",
     action: "show",
   });
+
 
   const [form] = Form.useForm();
 
@@ -168,17 +171,17 @@ const PaymentsList: React.FC = () => {
 
   const columns: ColumnsType<IPayment> = [
     {
-      title: "账单编号",
+      title: "ID",
       dataIndex: "id",
       key: "id",
-      width: 120,
+      width: 100,
       ellipsis: true,
       render: (id: string) => (
         <span title={id}>{id.slice(0, 8)}...</span>
       ),
     },
     {
-      title: "租约",
+      title: t("payments:columns.lease", "关联租约"),
       dataIndex: "leaseId",
       key: "leaseId",
       width: 120,
@@ -188,23 +191,24 @@ const PaymentsList: React.FC = () => {
       ),
     },
     {
-      title: "类型",
+      title: t("payments:columns.type", "类型"),
       dataIndex: "type",
       key: "type",
       width: 100,
     },
     {
-      title: "金额",
+      title: t("payments:columns.amount", "金额"),
       dataIndex: "amount",
       key: "amount",
       width: 120,
+      align: "right",
       sorter: true,
       render: (amount: string, record: IPayment) => (
         <span>{record.currency} {Number(amount).toFixed(2)}</span>
       ),
     },
     {
-      title: "状态",
+      title: t("payments:columns.status", "状态"),
       dataIndex: "status",
       key: "status",
       width: 140,
@@ -216,11 +220,11 @@ const PaymentsList: React.FC = () => {
         });
         
         return (
-          <Tooltip title={meta.isUpcoming ? "即将到期" : undefined}>
+          <Tooltip title={meta.isUpcoming ? t("payments:alerts.toDue", "即将到期") : undefined}>
             <Tag color={meta.badgeColor}>
-              {meta.badgeText}
+              {t(`payments:status.${record.status.toLowerCase()}`, meta.badgeText)}
               {meta.overdueDays !== null && meta.overdueDays > 0 && (
-                <span> ({meta.overdueDays}天)</span>
+                <span> ({t("payments:dueInfo.overdue", { days: meta.overdueDays })})</span>
               )}
             </Tag>
           </Tooltip>
@@ -228,12 +232,15 @@ const PaymentsList: React.FC = () => {
       },
     },
     {
-      title: "到期信息",
+      title: t("payments:columns.dueDate", "到期信息"),
       dataIndex: "dueDate",
       key: "dueDate",
-      width: 200,
+      width: 150,
+      align: "center",
       sorter: true,
       render: (_: string, record: IPayment) => {
+        // TODO: formatDueDateWithInfo needs to be i18n aware or we format it here
+        // For now, we keep it as is but wrap in span
         const formatted = formatDueDateWithInfo({
           status: record.status,
           dueDate: record.dueDate,
@@ -243,27 +250,12 @@ const PaymentsList: React.FC = () => {
       },
     },
     {
-      title: "实际支付日期",
-      dataIndex: "paidAt",
-      key: "paidAt",
-      width: 140,
-      render: (paidAt: string | undefined) =>
-        paidAt ? dayjs(paidAt).format("YYYY-MM-DD HH:mm") : "-",
-    },
-    {
-      title: "创建时间",
-      dataIndex: "createdAt",
-      key: "createdAt",
-      width: 160,
-      sorter: true,
-      render: (createdAt: string) => dayjs(createdAt).format("YYYY-MM-DD HH:mm"),
-    },
-    {
-      title: "操作",
+      title: t("payments:columns.actions", "操作"),
       key: "actions",
-      width: 200,
       fixed: "right",
-      render: (_: unknown, record: IPayment) => {
+      width: 100,
+      align: "center",
+      render: (_, record: IPayment) => {
         const canMark = canMarkPaymentAsPaid(record, canEdit?.can ?? false);
         const tooltip = getMarkPaidTooltip(record, canEdit?.can ?? false);
         const isMarking = markingPaymentId === record.id;
@@ -282,7 +274,7 @@ const PaymentsList: React.FC = () => {
                   loading={isMarking}
                   style={{ display: canMark || record.status === PaymentStatus.PENDING || record.status === PaymentStatus.OVERDUE ? "inline" : "none" }}
                 >
-                  标记已支付
+                  {t("payments:actions.markPaid", "标记已支付")}
                 </Button>
               </Tooltip>
             )}
@@ -292,34 +284,35 @@ const PaymentsList: React.FC = () => {
     },
   ];
 
+
   // 筛选区域组件
   const filtersComponent = (
     <Card>
       <Form form={form} layout="vertical" onFinish={handleFilterSubmit}>
         <Row gutter={16}>
           <Col xs={24} sm={12} md={8}>
-            <Form.Item label="支付状态" name="status">
-              <Select placeholder="选择状态" allowClear>
+            <Form.Item label={t("payments:columns.status", "支付状态")} name="status">
+              <Select placeholder={t("common:actions.select", "选择状态")} allowClear>
                 <Select.Option value={PaymentStatus.PENDING}>
-                  待支付
+                  {t("payments:status.pending", "待支付")}
                 </Select.Option>
                 <Select.Option value="PARTIAL">
-                  部分支付
+                  {t("payments:status.partial", "部分支付")}
                 </Select.Option>
                 <Select.Option value={PaymentStatus.PAID}>
-                  已支付
+                  {t("payments:status.paid", "已支付")}
                 </Select.Option>
                 <Select.Option value={PaymentStatus.OVERDUE}>
-                  已逾期
+                  {t("payments:status.overdue", "已逾期")}
                 </Select.Option>
                 <Select.Option value={PaymentStatus.CANCELED}>
-                  已取消
+                  {t("payments:status.canceled", "已取消")}
                 </Select.Option>
               </Select>
             </Form.Item>
           </Col>
           <Col xs={24} sm={12} md={8}>
-            <Form.Item label="到期日期区间" name="dateRange">
+            <Form.Item label={t("payments:columns.dueDate", "到期日期")} name="dateRange">
               <RangePicker style={{ width: "100%" }} />
             </Form.Item>
           </Col>
@@ -334,9 +327,9 @@ const PaymentsList: React.FC = () => {
           >
             <Space>
               <Button type="primary" htmlType="submit">
-                查询
+                {t("common:actions.search", "查询")}
               </Button>
-              <Button onClick={handleFilterReset}>重置</Button>
+              <Button onClick={handleFilterReset}>{t("common:actions.reset", "重置")}</Button>
             </Space>
           </Col>
         </Row>

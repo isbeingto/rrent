@@ -184,6 +184,7 @@ const LeasesList: React.FC = () => {
       key: "rentAmount",
       sorter: true,
       width: 120,
+      align: "right",
       render: (amount: number | string, record: ILease) => {
         const numAmount = typeof amount === 'number' ? amount : parseFloat(amount?.toString() || '0');
         return `${record.currency} ${isNaN(numAmount) ? '0.00' : numAmount.toFixed(2)}`;
@@ -216,22 +217,25 @@ const LeasesList: React.FC = () => {
       dataIndex: "startDate",
       key: "startDate",
       sorter: true,
-      render: (date: string) => new Date(date).toLocaleDateString("zh-CN"),
       width: 120,
+      align: "center",
+      render: (date: string) => new Date(date).toLocaleDateString("zh-CN"),
     },
     {
       title: "结束日期",
       dataIndex: "endDate",
       key: "endDate",
+      width: 120,
+      align: "center",
       render: (date: string | undefined) =>
         date ? new Date(date).toLocaleDateString("zh-CN") : "-",
-      width: 120,
     },
     {
       title: "押金",
       dataIndex: "depositAmount",
       key: "depositAmount",
       width: 120,
+      align: "right",
       render: (amount: number | string | null | undefined, record: ILease) => {
         if (amount === null || amount === undefined) return "-";
         const numAmount = typeof amount === 'number' ? amount : parseFloat(amount?.toString() || '0');
@@ -243,14 +247,16 @@ const LeasesList: React.FC = () => {
       dataIndex: "createdAt",
       key: "createdAt",
       sorter: true,
-      render: (date: string) => new Date(date).toLocaleString("zh-CN"),
-      width: 180,
+      width: 120,
+      align: "center",
+      render: (date: string) => new Date(date).toLocaleDateString("zh-CN"),
     },
     {
       title: "操作",
       key: "actions",
       fixed: "right",
-      width: 150,
+      width: 100,
+      align: "center",
       render: (_, record: ILease) => (
         <Space size="small">
           {canShow?.can && (

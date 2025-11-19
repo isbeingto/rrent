@@ -56,16 +56,20 @@ const PropertiesList: React.FC = () => {
       dataIndex: "name",
       key: "name",
       sorter: true,
+      ellipsis: true,
     },
     {
       title: "物业编码",
       dataIndex: "code",
       key: "code",
       sorter: true,
+      width: 100,
+      ellipsis: true,
     },
     {
       title: "地址",
       key: "address",
+      ellipsis: true,
       render: (_, record) => {
         const parts = [
           record.addressLine1,
@@ -81,6 +85,7 @@ const PropertiesList: React.FC = () => {
       title: "状态",
       dataIndex: "isActive",
       key: "isActive",
+      width: 100,
       render: (isActive: boolean) => (
         <Tag color={isActive ? "success" : "default"}>
           {isActive ? "启用" : "禁用"}
@@ -92,12 +97,16 @@ const PropertiesList: React.FC = () => {
       dataIndex: "createdAt",
       key: "createdAt",
       sorter: true,
-      render: (date: string) => new Date(date).toLocaleString("zh-CN"),
+      width: 120,
+      align: "center",
+      render: (date: string) => new Date(date).toLocaleDateString("zh-CN"),
     },
     {
       title: "操作",
       key: "actions",
       fixed: "right",
+      width: 100,
+      align: "center",
       render: (_, record) => (
         <Space size="small">
           {canShow?.can && (

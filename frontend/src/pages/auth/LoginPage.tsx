@@ -1,5 +1,11 @@
 import { Card, Form, Input, Button, Layout, message } from "antd";
 import { useLogin } from "@refinedev/core";
+import { useTranslation } from "react-i18next";
+import {
+  buildRequiredRule,
+  buildEmailRule,
+  buildPasswordRule,
+} from "../../shared/validation/rules";
 
 const { Content } = Layout;
 
@@ -21,6 +27,7 @@ interface LoginFormValues {
  * FE-1-78: 已接入真实 authProvider.login
  */
 export default function LoginPage() {
+  const { t } = useTranslation();
   const [form] = Form.useForm<LoginFormValues>();
   const { mutate: login, isPending } = useLogin<LoginFormValues>();
 
@@ -32,12 +39,13 @@ export default function LoginPage() {
     login(values, {
       onSuccess: () => {
         // Refine 会自动处理 redirectTo
-        message.success("登录成功");
+        message.success(t("common:form.success", { defaultValue: "登录成功" }));
       },
       onError: (error) => {
-        // 显示错误消息
+        // 显示错误消息，使用统一的文案
         const errorMessage =
-          (error as { message?: string })?.message || "登录失败，请检查您的凭据";
+          (error as { message?: string })?.message ||
+          t("common:form.submitFailed");
         message.error(errorMessage);
       },
     });
@@ -72,45 +80,39 @@ export default function LoginPage() {
             form={form}
             layout="vertical"
             onFinish={handleLogin}
+            scrollToFirstError
             requiredMark="optional"
           >
             {/* 邮箱字段 */}
             <Form.Item
               name="email"
-              label="邮箱"
-              rules={[
-                { required: true, message: "请输入邮箱地址" },
-                {
-                  type: "email",
-                  message: "请输入正确的邮箱地址",
-                },
-              ]}
+              label={t("common:fields.email")}
+              rules={[buildRequiredRule(t, "email"), buildEmailRule(t)]}
             >
-              <Input placeholder="请输入邮箱" type="email" />
+              <Input
+                placeholder={t("common:fields.email")}
+                type="email"
+              />
             </Form.Item>
 
             {/* 密码字段 */}
             <Form.Item
               name="password"
-              label="密码"
-              rules={[
-                { required: true, message: "请输入密码" },
-                {
-                  min: 6,
-                  message: "密码长度至少 6 位",
-                },
-              ]}
+              label={t("common:fields.password")}
+              rules={[buildRequiredRule(t, "password"), buildPasswordRule(t)]}
             >
-              <Input.Password placeholder="请输入密码（至少 6 位）" />
+              <Input.Password
+                placeholder={t("common:fields.password")}
+              />
             </Form.Item>
 
             {/* 组织代码字段 */}
             <Form.Item
               name="organizationCode"
-              label="组织代码"
-              rules={[{ required: true, message: "请输入组织代码" }]}
+              label={t("common:fields.organizationCode")}
+              rules={[buildRequiredRule(t, "organizationCode")]}
             >
-              <Input placeholder="请输入组织代码" />
+              <Input placeholder={t("common:fields.organizationCode")} />
             </Form.Item>
 
             {/* 登录按钮 */}

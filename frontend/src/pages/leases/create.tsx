@@ -2,8 +2,14 @@ import { Create, useForm, useSelect } from "@refinedev/antd";
 import { Form, Input, InputNumber, DatePicker, Select } from "antd";
 import { useCan } from "@refinedev/core";
 import { useNavigate, useSearchParams } from "react-router";
+import { useTranslation } from "react-i18next";
 import React, { useEffect } from "react";
 import dayjs from "dayjs";
+import {
+  buildRequiredSelectRule,
+  buildAmountRule,
+  buildDateRangeRule,
+} from "../../shared/validation/rules";
 
 /**
  * Leases Create 页面 (FE-2-91)
@@ -57,6 +63,7 @@ const statusLabels: Record<LeaseStatus, string> = {
 };
 
 const LeasesCreate: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   
@@ -80,6 +87,13 @@ const LeasesCreate: React.FC = () => {
     resource: "leases",
     action: "create",
     redirect: "list",
+    onMutationError: (error: unknown) => {
+      // 提交失败使用统一文案
+      const message =
+        (error as Record<string, unknown>)?.message ||
+        t("common:form.submitFailed");
+      return { message };
+    },
   });
 
   // 当预填参数存在时，设置表单初始值
@@ -124,15 +138,15 @@ const LeasesCreate: React.FC = () => {
 
   return (
     <Create saveButtonProps={saveButtonProps}>
-      <Form {...formProps} layout="vertical">
+      <Form {...formProps} layout="vertical" scrollToFirstError>
         <Form.Item
-          label="租客"
+          label={t("common:fields.leaseTenant")}
           name="tenantId"
-          rules={[{ required: true, message: "请选择租客" }]}
+          rules={[buildRequiredSelectRule(t, "leaseTenant")]}
         >
           <Select
             {...tenantSelectProps}
-            placeholder="请选择租客"
+            placeholder={t("common:fields.leaseTenant")}
             showSearch
             filterOption={(input, option) =>
               (option?.label?.toString() ?? "").toLowerCase().includes(input.toLowerCase())
@@ -141,13 +155,13 @@ const LeasesCreate: React.FC = () => {
         </Form.Item>
 
         <Form.Item
-          label="物业"
+          label={t("common:fields.leaseProperty")}
           name="propertyId"
-          rules={[{ required: true, message: "请选择物业" }]}
+          rules={[buildRequiredSelectRule(t, "leaseProperty")]}
         >
           <Select
             {...propertySelectProps}
-            placeholder="请选择物业"
+            placeholder={t("common:fields.leaseProperty")}
             disabled={!!prefilledPropertyId}
             showSearch
             filterOption={(input, option) =>
@@ -157,13 +171,13 @@ const LeasesCreate: React.FC = () => {
         </Form.Item>
 
         <Form.Item
-          label="单元"
+          label={t("common:fields.leaseUnit")}
           name="unitId"
-          rules={[{ required: true, message: "请选择单元" }]}
+          rules={[buildRequiredSelectRule(t, "leaseUnit")]}
         >
           <Select
             {...unitSelectProps}
-            placeholder="请选择单元"
+            placeholder={t("common:fields.leaseUnit")}
             disabled={!!prefilledUnitId}
             showSearch
             filterOption={(input, option) =>
@@ -173,66 +187,65 @@ const LeasesCreate: React.FC = () => {
         </Form.Item>
 
         <Form.Item
-          label="开始日期"
+          label={t("common:fields.leaseStartDate")}
           name="startDate"
-          rules={[{ required: true, message: "请选择开始日期" }]}
+          rules={[{ required: true, message: t("common:validation.required", { field: t("common:fields.leaseStartDate") }) }]}
           getValueProps={(value) => ({
             value: value ? dayjs(value) : undefined,
           })}
           normalize={(value) => (value ? value.toISOString() : undefined)}
         >
-          <DatePicker style={{ width: "100%" }} placeholder="请选择开始日期" />
+          <DatePicker style={{ width: "100%" }} placeholder={t("common:fields.leaseStartDate")} />
         </Form.Item>
 
         <Form.Item
-          label="结束日期"
+          label={t("common:fields.leaseEndDate")}
           name="endDate"
+          rules={[buildDateRangeRule(t, form)]}
           getValueProps={(value) => ({
             value: value ? dayjs(value) : undefined,
           })}
           normalize={(value) => (value ? value.toISOString() : undefined)}
         >
-          <DatePicker style={{ width: "100%" }} placeholder="请选择结束日期（可选）" />
+          <DatePicker style={{ width: "100%" }} placeholder={t("common:fields.leaseEndDate")} />
         </Form.Item>
 
         <Form.Item
-          label="租金金额"
+          label={t("common:fields.rentAmount")}
           name="rentAmount"
           rules={[
-            { required: true, message: "请输入租金金额" },
-            { type: "number", min: 0, message: "租金金额不能为负数" },
+            { required: true, message: t("common:validation.required", { field: t("common:fields.rentAmount") }) },
+            buildAmountRule(t),
           ]}
         >
           <InputNumber
             style={{ width: "100%" }}
-            placeholder="请输入租金金额"
+            placeholder={t("common:fields.rentAmount")}
             precision={2}
             min={0}
           />
         </Form.Item>
 
         <Form.Item
-          label="押金金额"
+          label={t("common:fields.depositAmount")}
           name="depositAmount"
-          rules={[
-            { type: "number", min: 0, message: "押金金额不能为负数" },
-          ]}
+          rules={[buildAmountRule(t)]}
         >
           <InputNumber
             style={{ width: "100%" }}
-            placeholder="请输入押金金额（可选）"
+            placeholder={t("common:fields.depositAmount")}
             precision={2}
             min={0}
           />
         </Form.Item>
 
         <Form.Item
-          label="计费周期"
+          label={t("common:fields.billCycle")}
           name="billCycle"
-          rules={[{ required: true, message: "请选择计费周期" }]}
+          rules={[buildRequiredSelectRule(t, "billCycle")]}
           initialValue={BillCycle.MONTHLY}
         >
-          <Select placeholder="请选择计费周期">
+          <Select placeholder={t("common:fields.billCycle")}>
             {Object.entries(billCycleLabels).map(([value, label]) => (
               <Select.Option key={value} value={value}>
                 {label}
@@ -246,7 +259,7 @@ const LeasesCreate: React.FC = () => {
           name="currency"
           initialValue="CNY"
         >
-          <Input placeholder="币种（默认 CNY）" maxLength={10} />
+          <Input placeholder="CNY" maxLength={10} />
         </Form.Item>
 
         <Form.Item

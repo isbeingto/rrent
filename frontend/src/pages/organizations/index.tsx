@@ -48,23 +48,28 @@ const OrganizationsList: React.FC = () => {
       dataIndex: "name",
       key: "name",
       sorter: true,
+      ellipsis: true,
     },
     {
       title: "组织编码",
       dataIndex: "code",
       key: "code",
       sorter: true,
+      width: 100,
+      ellipsis: true,
     },
     {
       title: "描述",
       dataIndex: "description",
       key: "description",
+      ellipsis: true,
       render: (text: string | undefined) => text || "-",
     },
     {
       title: "时区",
       dataIndex: "timezone",
       key: "timezone",
+      width: 120,
       render: (text: string | undefined) => text || "-",
     },
     {
@@ -72,19 +77,25 @@ const OrganizationsList: React.FC = () => {
       dataIndex: "createdAt",
       key: "createdAt",
       sorter: true,
-      render: (date: string) => new Date(date).toLocaleString("zh-CN"),
+      width: 120,
+      align: "center",
+      render: (date: string) => new Date(date).toLocaleDateString("zh-CN"),
     },
     {
       title: "更新时间",
       dataIndex: "updatedAt",
       key: "updatedAt",
       sorter: true,
-      render: (date: string) => new Date(date).toLocaleString("zh-CN"),
+      width: 120,
+      align: "center",
+      render: (date: string) => new Date(date).toLocaleDateString("zh-CN"),
     },
     {
       title: "操作",
       key: "actions",
       fixed: "right",
+      width: 100,
+      align: "center",
       render: (_, record) => (
         <Space size="small">
           {canShow?.can && (

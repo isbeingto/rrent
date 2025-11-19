@@ -2,7 +2,14 @@ import { Create, useForm } from "@refinedev/antd";
 import { Form, Input } from "antd";
 import { useCan } from "@refinedev/core";
 import { useNavigate } from "react-router";
+import { useTranslation } from "react-i18next";
 import React, { useEffect } from "react";
+import {
+  buildRequiredRule,
+  buildEmailRule,
+  buildPhoneRule,
+  buildMaxLengthRule,
+} from "../../shared/validation/rules";
 
 /**
  * Tenants Create 页面 (FE-2-89)
@@ -15,6 +22,7 @@ import React, { useEffect } from "react";
  */
 
 const TenantsCreate: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   
   const { data: canCreate } = useCan({
@@ -37,49 +45,49 @@ const TenantsCreate: React.FC = () => {
 
   return (
     <Create saveButtonProps={saveButtonProps}>
-      <Form {...formProps} layout="vertical">
+      <Form {...formProps} layout="vertical" scrollToFirstError>
         <Form.Item
-          label="姓名"
+          label={t("common:fields.tenantName")}
           name="fullName"
           rules={[
-            { required: true, message: "请输入租客姓名" },
-            { max: 100, message: "姓名不能超过100个字符" },
+            buildRequiredRule(t, "tenantName"),
+            buildMaxLengthRule(t, 100),
           ]}
         >
-          <Input placeholder="请输入租客姓名" />
+          <Input placeholder={t("common:fields.tenantName")} />
         </Form.Item>
 
         <Form.Item
-          label="邮箱"
+          label={t("common:fields.tenantEmail")}
           name="email"
           rules={[
-            { required: true, message: "请输入邮箱地址" },
-            { type: "email", message: "请输入有效的邮箱地址" },
+            buildRequiredRule(t, "tenantEmail"),
+            buildEmailRule(t),
           ]}
         >
-          <Input placeholder="请输入邮箱地址" />
+          <Input placeholder={t("common:fields.tenantEmail")} />
         </Form.Item>
 
         <Form.Item
-          label="电话"
+          label={t("common:fields.tenantPhone")}
           name="phone"
           rules={[
-            { required: true, message: "请输入电话号码" },
-            { max: 20, message: "电话号码不能超过20个字符" },
-            { pattern: /^[0-9+\-\s()]+$/, message: "请输入有效的电话号码" },
+            buildRequiredRule(t, "tenantPhone"),
+            buildPhoneRule(t),
+            buildMaxLengthRule(t, 20),
           ]}
         >
-          <Input placeholder="请输入电话号码" />
+          <Input placeholder={t("common:fields.tenantPhone")} />
         </Form.Item>
 
         <Form.Item
-          label="身份证号"
+          label={t("common:fields.tenantIdNumber")}
           name="idNumber"
           rules={[
-            { max: 50, message: "身份证号不能超过50个字符" },
+            buildMaxLengthRule(t, 50),
           ]}
         >
-          <Input placeholder="请输入身份证号（可选）" />
+          <Input placeholder={t("common:fields.tenantIdNumber")} />
         </Form.Item>
 
         <Form.Item

@@ -1,14 +1,19 @@
 import { Show } from "@refinedev/antd";
 import { Descriptions, Typography, Tag } from "antd";
-import { useOne, useCan } from "@refinedev/core";
+import { useCan } from "@refinedev/core";
 import { useNavigate, useParams } from "react-router";
+import { useTranslation } from "react-i18next";
 import React, { useEffect } from "react";
+import { PageSkeleton, SectionEmpty } from "../../components/ui";
+import { useShowPage } from "../../shared/hooks/useShowPage";
 
 const { Text } = Typography;
 
 /**
  * Tenants Show 页面 (FE-2-89)
  *
+ * FE-5-107: 集成统一的 Skeleton 和 Empty 状态
+ * 
  * 租客详情展示
  * - 使用 Descriptions 展示所有字段
  * - AccessControl：任何已登录用户都可查看
@@ -28,6 +33,7 @@ interface ITenant {
 }
 
 const TenantsShow: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const params = useParams<{ id: string }>();
   
@@ -56,13 +62,10 @@ const TenantsShow: React.FC = () => {
     }
   }, [canShow, navigate]);
 
-  const { query } = useOne<ITenant>({
+  const { data: tenant, isLoading, notFound } = useShowPage<ITenant>({
     resource: "tenants",
-    id: params.id || "",
+    id: params.id,
   });
-
-  const tenant = query.data?.data;
-  const isLoading = query.isLoading;
 
   // 格式化日期时间
   const formatDateTime = (dateString?: string) => {
@@ -77,14 +80,37 @@ const TenantsShow: React.FC = () => {
     });
   };
 
+  // 加载中状态
+  if (isLoading) {
+    return (
+      <Show title={t("tenants:page.showTitle", "租客详情")}>
+        <PageSkeleton />
+      </Show>
+    );
+  }
+
+  // 数据不存在
+  if (notFound) {
+    return (
+      <Show title={t("tenants:page.showTitle", "租客详情")}>
+        <SectionEmpty
+          type="notFound"
+          showReload
+          onReload={() => window.location.reload()}
+        />
+      </Show>
+    );
+  }
+
   return (
     <Show 
-      isLoading={isLoading}
+      isLoading={false}
       canEdit={canEdit?.can}
       canDelete={canDelete?.can}
+      title={t("tenants:page.showTitle", "租客详情")}
     >
       <Descriptions
-        title="租客详情"
+        title={t("tenants:page.showTitle", "租客详情")}
         bordered
         column={1}
       >
@@ -92,12 +118,13 @@ const TenantsShow: React.FC = () => {
           <Text code>{tenant?.id || "-"}</Text>
         </Descriptions.Item>
 
-        <Descriptions.Item label="姓名">
+        <Descriptions.Item label={t("tenants:columns.name", "姓名")}>
           <Text strong>{tenant?.fullName || "-"}</Text>
         </Descriptions.Item>
 
-        <Descriptions.Item label="邮箱">
+        <Descriptions.Item label={t("tenants:columns.email", "邮箱")}>
           {tenant?.email || "-"}
+
         </Descriptions.Item>
 
         <Descriptions.Item label="电话">

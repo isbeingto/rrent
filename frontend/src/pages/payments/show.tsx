@@ -1,7 +1,8 @@
 import { Show } from "@refinedev/antd";
 import { Descriptions, Typography, Tag, Button, Tooltip, App, Card, Alert, Space } from "antd";
-import { useOne, useInvalidate, useCan } from "@refinedev/core";
+import { useInvalidate, useCan } from "@refinedev/core";
 import { useParams } from "react-router";
+import { useTranslation } from "react-i18next";
 import React, { useState } from "react";
 import dayjs from "dayjs";
 import { DollarOutlined } from "@ant-design/icons";
@@ -13,6 +14,8 @@ import {
   getMarkPaidTooltip,
 } from "@shared/payments/markPaid";
 import { computePaymentStatusMeta } from "@shared/payments/status";
+import { PageSkeleton, SectionEmpty } from "../../components/ui";
+import { useShowPage } from "../../shared/hooks/useShowPage";
 
 const { Text } = Typography;
 
@@ -21,6 +24,8 @@ const { Text } = Typography;
  *
  * FE-2-93: 支付单详情展示 + Mark-Paid 功能
  * FE-3-97: 使用共享的 markPaid helper
+ * FE-5-107: 集成统一的 Skeleton 和 Empty 状态
+ * 
  * - 使用 Descriptions 展示所有字段
  * - 实现标记已支付功能（Mark-Paid）
  * - 权限控制：仅 OWNER/ADMIN/PROPERTY_MGR/OPERATOR 可标记
@@ -39,6 +44,7 @@ interface IPaymentDetail extends IPayment {
 }
 
 const PaymentsShow: React.FC = () => {
+  const { t } = useTranslation();
   const params = useParams<{ id: string }>();
   const invalidate = useInvalidate();
   const [isMarkingPaid, setIsMarkingPaid] = useState(false);
@@ -50,13 +56,10 @@ const PaymentsShow: React.FC = () => {
   });
   const canEdit = canData?.can ?? false;
 
-  const { query } = useOne<IPaymentDetail>({
+  const { data: payment, isLoading, notFound, query } = useShowPage<IPaymentDetail>({
     resource: "payments",
-    id: params.id || "",
+    id: params.id,
   });
-
-  const payment = query.data?.data;
-  const isLoading = query.isLoading;
 
   const handleMarkPaid = async () => {
     if (!payment) return;
@@ -86,9 +89,32 @@ const PaymentsShow: React.FC = () => {
   const canMark = canMarkPaymentAsPaid(payment, canEdit);
   const tooltip = getMarkPaidTooltip(payment, canEdit);
 
+  // 加载中状态
+  if (isLoading) {
+    return (
+      <Show title={t("payments:page.showTitle", "支付详情")}>
+        <PageSkeleton />
+      </Show>
+    );
+  }
+
+  // 数据不存在
+  if (notFound) {
+    return (
+      <Show title={t("payments:page.showTitle", "支付详情")}>
+        <SectionEmpty
+          type="notFound"
+          showReload
+          onReload={() => window.location.reload()}
+        />
+      </Show>
+    );
+  }
+
   return (
     <Show
-      isLoading={isLoading}
+      isLoading={false}
+      title={t("payments:page.showTitle", "支付详情")}
       headerButtons={({ defaultButtons }) => (
         <>
           {defaultButtons}
@@ -98,6 +124,7 @@ const PaymentsShow: React.FC = () => {
               icon={<DollarOutlined />}
               onClick={handleMarkPaid}
               loading={isMarkingPaid}
+
               disabled={!canMark || isMarkingPaid}
             >
               标记已支付
@@ -122,7 +149,7 @@ const PaymentsShow: React.FC = () => {
                 if (meta.overdueDays !== null && meta.overdueDays > 0) {
                   return (
                     <Alert
-                      message={`该支付单已逾期 ${meta.overdueDays} 天`}
+                      message={t("payments:dueInfo.overdue", { days: meta.overdueDays })}
                       type="error"
                       showIcon
                     />
@@ -133,7 +160,7 @@ const PaymentsShow: React.FC = () => {
                 if (meta.isUpcoming && meta.daysToDue !== null) {
                   return (
                     <Alert
-                      message={`距离到期还剩 ${meta.daysToDue} 天`}
+                      message={t("payments:dueInfo.toDue", { days: meta.daysToDue })}
                       type="warning"
                       showIcon
                     />
@@ -144,7 +171,7 @@ const PaymentsShow: React.FC = () => {
                 if (payment.status === PaymentStatus.PAID && payment.paidAt) {
                   return (
                     <Alert
-                      message={`已于 ${dayjs(payment.paidAt as string).format('YYYY-MM-DD HH:mm')} 支付`}
+                      message={t("payments:dueInfo.paidAt", { date: dayjs(payment.paidAt as string).format('YYYY-MM-DD HH:mm') })}
                       type="success"
                       showIcon
                     />
@@ -157,16 +184,16 @@ const PaymentsShow: React.FC = () => {
           </Card>
 
           <Descriptions bordered column={2}>
-          <Descriptions.Item label="支付单 ID" span={2}>
+          <Descriptions.Item label={t("payments:columns.id", "支付单 ID")} span={2}>
             <Text copyable>{payment.id}</Text>
           </Descriptions.Item>
-          <Descriptions.Item label="租约 ID">
+          <Descriptions.Item label={t("payments:columns.leaseId", "租约 ID")}>
             <Text copyable>{payment.leaseId as string}</Text>
           </Descriptions.Item>
-          <Descriptions.Item label="类型">
+          <Descriptions.Item label={t("payments:columns.type", "类型")}>
             {payment.type as string}
           </Descriptions.Item>
-          <Descriptions.Item label="状态">
+          <Descriptions.Item label={t("payments:columns.status", "状态")}>
             {(() => {
               const meta = computePaymentStatusMeta({
                 status: payment.status as string,
@@ -175,24 +202,24 @@ const PaymentsShow: React.FC = () => {
               });
               return (
                 <Tag color={meta.badgeColor}>
-                  {meta.badgeText}
+                  {t(`payments:status.${payment.status.toLowerCase()}`, meta.badgeText)}
                   {meta.overdueDays !== null && meta.overdueDays > 0 && (
-                    <span> ({meta.overdueDays}天)</span>
+                    <span> ({t("payments:dueInfo.overdue", { days: meta.overdueDays })})</span>
                   )}
                 </Tag>
               );
             })()}
           </Descriptions.Item>
-          <Descriptions.Item label="金额">
+          <Descriptions.Item label={t("payments:columns.amount", "金额")}>
             {payment.currency} {Number(payment.amount).toFixed(2)}
           </Descriptions.Item>
-          <Descriptions.Item label="到期日期">
+          <Descriptions.Item label={t("payments:columns.dueDate", "到期日期")}>
             {dayjs(payment.dueDate as string).format("YYYY-MM-DD")}
           </Descriptions.Item>
-          <Descriptions.Item label="实际支付日期">
+          <Descriptions.Item label={t("payments:columns.paidAt", "实际支付日期")}>
             {payment.paidAt ? dayjs(payment.paidAt as string).format("YYYY-MM-DD HH:mm") : "-"}
           </Descriptions.Item>
-          <Descriptions.Item label="备注" span={2}>
+          <Descriptions.Item label={t("payments:columns.notes", "备注")} span={2}>
             {(payment.notes as string) || "-"}
           </Descriptions.Item>
           <Descriptions.Item label="创建时间">

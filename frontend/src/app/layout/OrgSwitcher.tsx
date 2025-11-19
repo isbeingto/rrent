@@ -10,6 +10,7 @@
 import { Select } from "antd";
 import { SwapOutlined } from "@ant-design/icons";
 import { useInvalidate } from "@refinedev/core";
+import { useTranslation } from "react-i18next";
 import { 
   getUserOrganizations, 
   getCurrentOrganizationId,
@@ -18,6 +19,7 @@ import {
 import { switchOrganization } from "@shared/auth/storage";
 
 export default function OrgSwitcher() {
+  const { t } = useTranslation();
   const invalidate = useInvalidate();
   const organizations = getUserOrganizations();
   const currentOrgId = getCurrentOrganizationId();
@@ -54,7 +56,7 @@ export default function OrgSwitcher() {
       value={currentOrgId || undefined}
       onChange={handleChange}
       style={{ minWidth: 180 }}
-      placeholder="选择组织"
+      placeholder={t("layout:header.organizationSwitcher.title", "选择组织")}
       suffixIcon={<SwapOutlined />}
       options={organizations.map(org => ({
         label: org.name,
@@ -63,3 +65,4 @@ export default function OrgSwitcher() {
     />
   );
 }
+

@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Menu } from "antd";
 import { useLocation, useNavigate } from "react-router";
 import { useCan } from "@refinedev/core";
+import { useTranslation } from "react-i18next";
 import { NAV_ITEMS } from "@shared/nav";
 import type { MenuProps } from "antd";
 
@@ -18,6 +19,7 @@ interface SiderNavProps {
  * - 不允许 list 的资源菜单将被完全隐藏
  */
 export default function SiderNav({ collapsed }: SiderNavProps) {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -77,7 +79,7 @@ export default function SiderNav({ collapsed }: SiderNavProps) {
   const menuItems: MenuProps["items"] = filteredNavItems.map((item) => ({
     key: item.key,
     icon: item.icon,
-    label: item.label,
+    label: t(`layout:menu.${item.key}`, item.label), // 使用 i18n，fallback 到原始 label
     disabled: item.disabled,
     onClick: () => {
       if (!item.disabled && item.to) {
@@ -96,3 +98,4 @@ export default function SiderNav({ collapsed }: SiderNavProps) {
     />
   );
 }
+

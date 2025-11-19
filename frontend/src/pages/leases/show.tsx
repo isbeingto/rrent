@@ -1,17 +1,23 @@
 import { Show, TextField, NumberField, DateField } from "@refinedev/antd";
-import { useShow, useCan, useList } from "@refinedev/core";
+import { useCan, useList } from "@refinedev/core";
 import { Typography, Tag, Card, Descriptions, Space, Button, Table, Row, Col } from "antd";
 import { useParams, Link } from "react-router";
 import React, { useEffect, useState } from "react";
 import http from "../../shared/api/http";
+import { AuditPanel } from "../../components/Audit/AuditPanel";
+import { PageSkeleton, SectionEmpty } from "../../components/ui";
+import { useShowPage } from "../../shared/hooks/useShowPage";
 
 /**
- * Leases Show 页面 (FE-3-96)
+ * Leases Show 页面 (FE-3-96, FE-5-106)
  *
+ * FE-5-107: 集成统一的 Skeleton 和 Empty 状态
+ * 
  * 聚合展示租约详情
- * - 租约总览：状态、金额、账单周期、日期
+ * - 租约总览:状态、金额、账单周期、日期
  * - 关联对象：租客信息、房源信息（单元+物业）
  * - 账单列表：该租约的所有 Payment 记录
+ * - 审计记录：该租约的所有审计日志
  */
 
 // 租约状态枚举
@@ -100,11 +106,6 @@ interface ILease {
 const LeasesShow: React.FC = () => {
   const params = useParams<{ id: string }>();
 
-  const { query: queryResult } = useShow<ILease>({
-    resource: "leases",
-    id: params.id,
-  });
-
   const { data: canEdit } = useCan({
     resource: "leases",
     action: "edit",
@@ -117,7 +118,10 @@ const LeasesShow: React.FC = () => {
     params: { id: params.id },
   });
 
-  const lease = queryResult?.data?.data;
+  const { data: lease, isLoading, notFound } = useShowPage<ILease>({
+    resource: "leases",
+    id: params.id,
+  });
 
   // 状态管理：租客、单元、物业、支付单
   const [tenant, setTenant] = useState<ITenant | null>(null);
@@ -211,8 +215,34 @@ const LeasesShow: React.FC = () => {
     fetchProperty();
   }, [lease?.propertyId, lease?.organizationId]);
 
+  // 加载中状态
+  if (isLoading) {
+    return (
+      <Show title="租约详情">
+        <PageSkeleton />
+      </Show>
+    );
+  }
+
+  // 数据不存在
+  if (notFound) {
+    return (
+      <Show title="租约详情">
+        <SectionEmpty
+          type="notFound"
+          showReload
+          onReload={() => window.location.reload()}
+        />
+      </Show>
+    );
+  }
+
   if (!lease) {
-    return <div>加载中...</div>;
+    return (
+      <Show title="租约详情">
+        <SectionEmpty type="error" showReload onReload={() => window.location.reload()} />
+      </Show>
+    );
   }
 
   const statusInfo = statusConfig[lease.status as LeaseStatus];
@@ -306,6 +336,7 @@ const LeasesShow: React.FC = () => {
 
   return (
     <Show
+      isLoading={false}
       canEdit={canEdit?.can}
       canDelete={canDelete?.can}
       headerButtons={({ defaultButtons }) => (
@@ -486,6 +517,9 @@ const LeasesShow: React.FC = () => {
           <Typography.Paragraph>{lease.notes}</Typography.Paragraph>
         </Card>
       )}
+
+      {/* 审计记录 */}
+      <AuditPanel entity="LEASE" entityId={lease.id} />
     </Show>
   );
 };

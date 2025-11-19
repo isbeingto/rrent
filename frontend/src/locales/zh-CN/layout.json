@@ -1,0 +1,31 @@
+{
+  "menu": {
+    "dashboard": "仪表盘",
+    "organizations": "组织管理",
+    "properties": "房产管理",
+    "units": "单元管理",
+    "tenants": "租客管理",
+    "leases": "租约管理",
+    "payments": "财务管理"
+  },
+  "header": {
+    "organizationSwitcher": {
+      "title": "切换组织",
+      "current": "当前组织"
+    },
+    "user": {
+      "profile": "个人资料",
+      "logout": "退出登录"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "登录",
+      "subtitle": "R-RENT 公寓租赁管理系统",
+      "email": "邮箱",
+      "password": "密码",
+      "submit": "登录",
+      "forgotPassword": "忘记密码？"
+    }
+  }
+}

@@ -1,6 +1,6 @@
 import { Show } from "@refinedev/antd";
 import { Descriptions, Typography, Tag, Button, Card, Space, Tooltip } from "antd";
-import { useOne, useCan } from "@refinedev/core";
+import { useCan } from "@refinedev/core";
 import { useNavigate, useParams } from "react-router";
 import React, { useEffect, useState } from "react";
 import http from "@shared/api/http";
@@ -10,15 +10,21 @@ import {
   type ILease,
   type OccupancyInfo,
 } from "@shared/units/occupancy";
+import { PageSkeleton, SectionEmpty } from "../../components/ui";
+import { useShowPage } from "../../shared/hooks/useShowPage";
 
 const { Text } = Typography;
 
 /**
  * Units Show 页面 (FE-2-87)
  *
+ * FE-3-98: 单元占用情况展示
+ * FE-5-107: 集成统一的 Skeleton 和 Empty 状态
+ * 
  * 单元详情展示
  * - 使用 Descriptions 展示所有字段
  * - 显示所属物业名称（关联数据）
+ * - 显示当前占用情况
  * - AccessControl：任何已登录用户都可查看
  */
 
@@ -83,13 +89,10 @@ const UnitsShow: React.FC = () => {
     }
   }, [canShow, navigate]);
 
-  const { query } = useOne<IUnit>({
+  const { data: unit, isLoading, notFound } = useShowPage<IUnit>({
     resource: "units",
-    id: params.id || "",
+    id: params.id,
   });
-
-  const unit = query.data?.data;
-  const isLoading = query.isLoading;
 
   // 获取单元的最近一条租约（用于占用判定）
   useEffect(() => {
@@ -162,9 +165,31 @@ const UnitsShow: React.FC = () => {
     return `¥${num.toFixed(2)}`;
   };
 
+  // 加载中状态
+  if (isLoading) {
+    return (
+      <Show>
+        <PageSkeleton rows={12} />
+      </Show>
+    );
+  }
+
+  // 数据不存在
+  if (notFound) {
+    return (
+      <Show>
+        <SectionEmpty
+          type="notFound"
+          showReload
+          onReload={() => window.location.reload()}
+        />
+      </Show>
+    );
+  }
+
   return (
     <Show 
-      isLoading={isLoading}
+      isLoading={false}
       headerButtons={({ defaultButtons }) => (
         <>
           {defaultButtons}

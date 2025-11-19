@@ -1,0 +1,104 @@
+{
+  "actions": {
+    "create": "创建",
+    "edit": "编辑",
+    "delete": "删除",
+    "show": "详情",
+    "save": "保存",
+    "cancel": "取消",
+    "confirm": "确认",
+    "back": "返回",
+    "refresh": "刷新",
+    "search": "查询",
+    "reset": "重置",
+    "select": "选择",
+    "markPaid": "标记已付",
+    "createLease": "创建租约"
+  },
+  "status": {
+    "active": "启用",
+    "inactive": "禁用",
+    "enabled": "已启用",
+    "disabled": "已禁用"
+  },
+  "validation": {
+    "required": "请输入{{field}}",
+    "requiredSelect": "请选择{{field}}",
+    "email": "请输入有效的邮箱地址",
+    "phone": "请输入有效的手机号",
+    "number": "请输入有效的数字",
+    "positiveNumber": "请输入大于 0 的数字",
+    "dateRange": "结束日期不能早于开始日期",
+    "minLength": "至少输入 {{min}} 个字符",
+    "maxLength": "最多输入 {{max}} 个字符",
+    "password": {
+      "minLength": "密码长度至少 {{min}} 位"
+    },
+    "pattern": "输入格式不正确"
+  },
+  "fields": {
+    "email": "邮箱",
+    "password": "密码",
+    "organizationCode": "组织代码",
+    "tenantName": "租客姓名",
+    "tenantEmail": "租客邮箱",
+    "tenantPhone": "租客电话",
+    "tenantIdNumber": "证件号",
+    "unitNumber": "单元编号",
+    "unitName": "单元名称",
+    "unitProperty": "所属物业",
+    "unitFloor": "楼层",
+    "unitArea": "面积",
+    "unitStatus": "单元状态",
+    "leaseStartDate": "开始日期",
+    "leaseEndDate": "结束日期",
+    "leaseTenant": "租客",
+    "leaseProperty": "物业",
+    "leaseUnit": "单元",
+    "rentAmount": "租金金额",
+    "depositAmount": "押金金额",
+    "billCycle": "计费周期",
+    "propertyName": "物业名称",
+    "propertyCode": "物业编码",
+    "organizationName": "组织名称"
+  },
+  "form": {
+    "submitFailed": "提交失败，请检查输入",
+    "saveFailed": "保存失败，请重试",
+    "updateFailed": "更新失败，请重试",
+    "deleteFailed": "删除失败，请重试"
+  },
+  "errors": {
+    "unauthorized": "未登录，请重新登录",
+    "forbidden": "无权访问此资源",
+    "unknown": "发生未知错误"
+  },
+  "loading": {
+    "page": "页面加载中…",
+    "table": "数据加载中…",
+    "content": "内容加载中…"
+  },
+  "empty": {
+    "default": {
+      "title": "暂无数据",
+      "description": "当前还没有任何记录"
+    },
+    "filtered": {
+      "title": "没有匹配的结果",
+      "description": "尝试调整筛选条件或清空筛选"
+    },
+    "error": {
+      "title": "加载失败",
+      "description": "无法加载数据，请稍后重试"
+    },
+    "notFound": {
+      "title": "数据不存在",
+      "description": "该记录可能已被删除或不存在"
+    },
+    "actions": {
+      "resetFilters": "重置筛选",
+      "reload": "刷新",
+      "backToList": "返回列表"
+    }
+  }
+}

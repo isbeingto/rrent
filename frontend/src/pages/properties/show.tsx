@@ -1,8 +1,11 @@
 import { Show } from "@refinedev/antd";
 import { Descriptions, Typography, Tag } from "antd";
-import { useOne, useCan } from "@refinedev/core";
+import { useCan } from "@refinedev/core";
 import { useNavigate, useParams } from "react-router";
 import React, { useEffect } from "react";
+import { AuditPanel } from "../../components/Audit/AuditPanel";
+import { PageSkeleton, SectionEmpty } from "../../components/ui";
+import { useShowPage } from "../../shared/hooks/useShowPage";
 
 const { Text } = Typography;
 
@@ -10,7 +13,10 @@ const { Text } = Typography;
  * Properties Show 页面
  *
  * FE-2-85: 物业详情展示
+ * FE-5-106: 审计记录展示
+ * FE-5-107: 集成统一的 Skeleton 和 Empty 状态
  * - 使用 Descriptions 展示所有字段
+ * - 展示审计日志历史
  * - AccessControl：任何已登录用户都可查看（根据 accessControlProvider 规则）
  */
 
@@ -60,13 +66,10 @@ const PropertiesShow: React.FC = () => {
     }
   }, [canShow, navigate]);
 
-  const { query } = useOne<IProperty>({
+  const { data: property, isLoading, notFound } = useShowPage<IProperty>({
     resource: "properties",
-    id: params.id || "",
+    id: params.id,
   });
-
-  const property = query.data?.data;
-  const isLoading = query.isLoading;
 
   // 格式化地址显示
   const formatAddress = () => {
@@ -82,9 +85,31 @@ const PropertiesShow: React.FC = () => {
     return parts.length > 0 ? parts.join(", ") : "-";
   };
 
+  // 加载中状态
+  if (isLoading) {
+    return (
+      <Show>
+        <PageSkeleton />
+      </Show>
+    );
+  }
+
+  // 数据不存在
+  if (notFound) {
+    return (
+      <Show>
+        <SectionEmpty
+          type="notFound"
+          showReload
+          onReload={() => window.location.reload()}
+        />
+      </Show>
+    );
+  }
+
   return (
     <Show 
-      isLoading={isLoading}
+      isLoading={false}
       canEdit={canEdit?.can}
       canDelete={canDelete?.can}
     >
@@ -147,6 +172,9 @@ const PropertiesShow: React.FC = () => {
             : "-"}
         </Descriptions.Item>
       </Descriptions>
+
+      {/* 审计记录 */}
+      {property && <AuditPanel entity="PROPERTY" entityId={property.id} />}
     </Show>
   );
 };

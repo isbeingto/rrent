@@ -1,11 +1,13 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
-import { Prisma } from "@prisma/client";
+import { Prisma, AuditLog } from "@prisma/client";
 import { AuditLogContext, AuditLogPayload } from "./audit-log.types";
+import { Paginated } from "../../common/pagination";
+import { QueryAuditLogDto } from "./dto/query-audit-log.dto";
 
 /**
  * 审计日志服务
- * 提供统一的审计日志写入接口
+ * 提供统一的审计日志写入和查询接口
  *
  * 设计原则：
  * 1. 日志写入失败不应中断主业务流程
@@ -97,5 +99,78 @@ export class AuditLogService {
         error instanceof Error ? error.stack : String(error),
       );
     }
+  }
+
+  /**
+   * 查询审计日志列表
+   * 支持按组织、实体类型、实体ID过滤，以及分页和排序
+   *
+   * @param listQuery 通用列表查询参数（分页、排序）
+   * @param filters 审计日志特定的过滤条件
+   * @returns Promise<Paginated<AuditLog>>
+   */
+  async findMany(
+    listQuery: {
+      page?: number;
+      limit?: number;
+      sort?: string;
+      order?: "asc" | "desc";
+    },
+    filters: QueryAuditLogDto,
+  ): Promise<Paginated<AuditLog>> {
+    const page = listQuery.page ?? 1;
+    const limit = listQuery.limit ?? 20;
+    const skip = (page - 1) * limit;
+    const sort = listQuery.sort ?? "createdAt";
+    const order = listQuery.order ?? "desc";
+
+    // 构建 where 条件
+    const where: Prisma.AuditLogWhereInput = {};
+
+    if (filters.organizationId) {
+      where.organizationId = filters.organizationId;
+    }
+
+    if (filters.entity) {
+      where.entity = filters.entity;
+    }
+
+    if (filters.entityId) {
+      where.entityId = filters.entityId;
+    }
+
+    if (filters.action) {
+      where.action = filters.action;
+    }
+
+    // 并行查询总数和数据
+    const [total, items] = await Promise.all([
+      this.prisma.auditLog.count({ where }),
+      this.prisma.auditLog.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { [sort]: order },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              fullName: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      items,
+      meta: {
+        total,
+        page,
+        limit,
+        pageCount: Math.ceil(total / limit),
+      },
+    };
   }
 }

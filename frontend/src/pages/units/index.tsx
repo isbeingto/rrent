@@ -210,6 +210,7 @@ const UnitsList: React.FC = () => {
       key: "unitNumber",
       sorter: true,
       width: 120,
+      ellipsis: true,
     },
     {
       title: "楼层",
@@ -225,6 +226,7 @@ const UnitsList: React.FC = () => {
       key: "areaSqm",
       sorter: true,
       width: 100,
+      align: "right",
       render: (area: number | undefined) => (area ? `${area}㎡` : "-"),
     },
     {
@@ -248,23 +250,25 @@ const UnitsList: React.FC = () => {
     {
       title: "所属物业",
       dataIndex: ["property", "name"],
-      key: "propertyName",
-      sorter: true,
-      render: (propertyName: string | undefined) => propertyName || "-",
+      key: "property.name",
+      ellipsis: true,
+      render: (name: string | undefined) => name || "-",
     },
     {
       title: "创建时间",
       dataIndex: "createdAt",
       key: "createdAt",
       sorter: true,
-      render: (date: string) => new Date(date).toLocaleString("zh-CN"),
-      width: 180,
+      width: 120,
+      align: "center",
+      render: (date: string) => new Date(date).toLocaleDateString("zh-CN"),
     },
     {
       title: "操作",
       key: "actions",
       fixed: "right",
-      width: 150,
+      width: 100,
+      align: "center",
       render: (_, record: IUnit) => (
         <Space size="small">
           {canShow?.can && (

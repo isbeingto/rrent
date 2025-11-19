@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Layout, Typography, Breadcrumb, Button, theme } from "antd";
 import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
 import { Outlet, useLocation } from "react-router";
+import { useTranslation } from "react-i18next";
 import SiderNav from "./SiderNav";
 import OrgSwitcher from "./OrgSwitcher";
 import { NAV_ITEMS } from "@shared/nav";
@@ -16,6 +17,7 @@ const { Title } = Typography;
  * 支持响应式折叠与手动折叠
  */
 export default function MainLayout() {
+  const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const {
@@ -30,11 +32,11 @@ export default function MainLayout() {
   const currentPath = location.pathname;
 
   if (currentPath === "/") {
-    breadcrumbItems.push({ title: "Dashboard" });
+    breadcrumbItems.push({ title: t("layout:menu.dashboard", "Dashboard") });
   } else {
     const navItem = NAV_ITEMS.find((item) => item.to === currentPath);
     if (navItem) {
-      breadcrumbItems.push({ title: navItem.label });
+      breadcrumbItems.push({ title: t(`layout:menu.${navItem.key}`, navItem.label) });
     } else {
       breadcrumbItems.push({ title: "404" });
     }
@@ -42,6 +44,7 @@ export default function MainLayout() {
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
+
       {/* 侧边栏 */}
       <Sider
         collapsible

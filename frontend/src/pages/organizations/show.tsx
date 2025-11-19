@@ -1,8 +1,10 @@
 import { Show } from "@refinedev/antd";
 import { Descriptions, Typography } from "antd";
-import { useOne, useCan } from "@refinedev/core";
+import { useCan } from "@refinedev/core";
 import { useNavigate, useParams } from "react-router";
 import React, { useEffect } from "react";
+import { PageSkeleton, SectionEmpty } from "../../components/ui";
+import { useShowPage } from "../../shared/hooks/useShowPage";
 
 const { Text } = Typography;
 
@@ -10,6 +12,7 @@ const { Text } = Typography;
  * Organizations Show 页面
  *
  * FE-2-83: 组织详情展示
+ * FE-5-107: 集成统一的 Skeleton 和 Empty 状态
  * - 使用 Descriptions 展示所有字段
  * - AccessControl：任何已登录用户都可查看（根据 accessControlProvider 规则）
  */
@@ -53,17 +56,36 @@ const OrganizationsShow: React.FC = () => {
     }
   }, [canShow, navigate]);
 
-  const { query } = useOne<IOrganization>({
+  const { data: organization, isLoading, notFound } = useShowPage<IOrganization>({
     resource: "organizations",
-    id: params.id || "",
+    id: params.id,
   });
 
-  const organization = query.data?.data;
-  const isLoading = query.isLoading;
+  // 加载中状态
+  if (isLoading) {
+    return (
+      <Show>
+        <PageSkeleton />
+      </Show>
+    );
+  }
+
+  // 数据不存在
+  if (notFound) {
+    return (
+      <Show>
+        <SectionEmpty
+          type="notFound"
+          showReload
+          onReload={() => window.location.reload()}
+        />
+      </Show>
+    );
+  }
 
   return (
     <Show 
-      isLoading={isLoading}
+      isLoading={false}
       canEdit={canEdit?.can}
       canDelete={canDelete?.can}
     >
