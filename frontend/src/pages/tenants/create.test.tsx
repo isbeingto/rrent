@@ -1,9 +1,10 @@
+/// <reference types="@testing-library/jest-dom" />
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BrowserRouter } from "react-router";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { I18nextProvider } from "react-i18next";
-import i18n from "../../../locales/i18n";
+import i18n from "../../i18n";
 import TenantsCreate from "./create";
 import * as coreHooks from "@refinedev/core";
 
@@ -244,10 +245,10 @@ describe("TenantsCreate - Form Validation (FE-5-108)", () => {
     await waitFor(() => {
       // 获取所有错误文本
       const errors = screen.getAllByText(/请输入|请选择|不能超过/);
-      
+
       // 验证至少有一个错误来自 i18n
       expect(errors.length).toBeGreaterThan(0);
-      
+
       // 每个错误都应该包含有效的文案（不是"undefined"或"[object Object]"）
       errors.forEach((error) => {
         expect(error.textContent).not.toMatch(/undefined|\[object/i);

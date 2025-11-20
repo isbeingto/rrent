@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { JwtModule, JwtModuleOptions } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
 import { ConfigModule, ConfigService } from "@nestjs/config";
@@ -15,7 +15,7 @@ import { AuditLogModule } from "../audit-log/audit-log.module";
     PassportModule,
     PrismaModule,
     ConfigModule,
-    AuditLogModule,
+    forwardRef(() => AuditLogModule),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

@@ -71,7 +71,7 @@ const getActionColor = (action: string): string => {
 };
 
 export const AuditPanel: React.FC<AuditPanelProps> = ({ entity, entityId }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation("audit");
 
   // 查询审计日志
   const { query } = useList<IAuditLog>({
@@ -105,24 +105,24 @@ export const AuditPanel: React.FC<AuditPanelProps> = ({ entity, entityId }) => {
   // 表格列定义
   const columns = [
     {
-      title: t("audit.fields.action"),
+      title: t("fields.action"),
       dataIndex: "action",
       key: "action",
       width: 180,
       render: (action: string) => (
         <Tag color={getActionColor(action)}>
-          {t(`audit.actions.${action}`, action)}
+          {t(`actions.${action}`, action)}
         </Tag>
       ),
     },
     {
-      title: t("audit.fields.user"),
-      dataIndex: "user",
+      title: t("fields.user"),
+      dataIndex: "userId",
       key: "user",
       width: 200,
       render: (_: unknown, record: IAuditLog) => {
         if (!record.user) {
-          return <Text type="secondary">{t("audit.system")}</Text>;
+          return <Text type="secondary">{t("system")}</Text>;
         }
         return (
           <Space direction="vertical" size={0}>
@@ -137,7 +137,7 @@ export const AuditPanel: React.FC<AuditPanelProps> = ({ entity, entityId }) => {
       },
     },
     {
-      title: t("audit.fields.createdAt"),
+      title: t("fields.createdAt"),
       dataIndex: "createdAt",
       key: "createdAt",
       width: 180,
@@ -159,7 +159,7 @@ export const AuditPanel: React.FC<AuditPanelProps> = ({ entity, entityId }) => {
     <Card
       title={
         <Title level={5} style={{ margin: 0 }}>
-          {t("audit.panelTitle")}
+          {t("panelTitle")}
         </Title>
       }
       style={{ marginTop: 24 }}
@@ -171,8 +171,8 @@ export const AuditPanel: React.FC<AuditPanelProps> = ({ entity, entityId }) => {
       {!isLoading && auditLogs.length === 0 && (
         <SectionEmpty
           type="default"
-          title={t("audit.empty.title")}
-          description={t("audit.empty.description")}
+          title={t("empty.title")}
+          description={t("empty.description")}
         />
       )}
 

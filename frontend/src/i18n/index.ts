@@ -6,6 +6,7 @@ import commonZh from "../locales/zh-CN/common.json";
 import layoutZh from "../locales/zh-CN/layout.json";
 import tenantsZh from "../locales/zh-CN/tenants.json";
 import paymentsZh from "../locales/zh-CN/payments.json";
+import auditZh from "../locales/zh-CN/audit.json";
 
 // 资源结构
 const resources = {
@@ -14,6 +15,7 @@ const resources = {
     layout: layoutZh,
     tenants: tenantsZh,
     payments: paymentsZh,
+    audit: auditZh,
   },
   // 预留 en-US
   // "en-US": { ... }
@@ -25,9 +27,9 @@ i18n
     resources,
     lng: "zh-CN", // 默认语言
     fallbackLng: "zh-CN", // 回退语言
-    
+
     // 命名空间配置
-    ns: ["common", "layout", "tenants", "payments"],
+    ns: ["common", "layout", "tenants", "payments", "audit"],
     defaultNS: "common",
 
     interpolation: {

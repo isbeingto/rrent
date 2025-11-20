@@ -1,10 +1,11 @@
+/// <reference types="@testing-library/jest-dom" />
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BrowserRouter } from "react-router";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { I18nextProvider } from "react-i18next";
-import i18n from "../../../locales/i18n";
-import LoginPage from "../LoginPage";
+import i18n from "../../i18n";
+import LoginPage from "./LoginPage";
 import * as authHooks from "@refinedev/core";
 
 /**

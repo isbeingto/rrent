@@ -102,6 +102,8 @@ function createCorsOptions(): CorsOptions {
       }
 
       console.warn(`[CORS] Blocked origin: ${origin}`);
+      console.warn(`[CORS] Allowed origins:`, JSON.stringify(allowedOrigins));
+      console.warn(`[CORS] Origin type: ${typeof origin}, length: ${origin.length}`);
       return callback(new Error("Not allowed by CORS"), false);
     },
     credentials: true,

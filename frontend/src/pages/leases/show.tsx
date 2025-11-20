@@ -155,7 +155,7 @@ const LeasesShow: React.FC = () => {
   // 获取租客信息
   useEffect(() => {
     if (!lease?.tenantId) return;
-    
+
     const fetchTenant = async () => {
       setLoadingTenant(true);
       try {
@@ -176,7 +176,7 @@ const LeasesShow: React.FC = () => {
   // 获取单元信息
   useEffect(() => {
     if (!lease?.unitId) return;
-    
+
     const fetchUnit = async () => {
       setLoadingUnit(true);
       try {
@@ -197,7 +197,7 @@ const LeasesShow: React.FC = () => {
   // 获取物业信息
   useEffect(() => {
     if (!lease?.propertyId) return;
-    
+
     const fetchProperty = async () => {
       setLoadingProperty(true);
       try {

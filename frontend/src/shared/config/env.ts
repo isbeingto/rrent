@@ -1,4 +1,4 @@
-const DEFAULT_API_BASE_URL = "http://74.122.24.3:3000";
+const DEFAULT_API_BASE_URL = "http://154.48.237.34:3000";
 const ENV_NAME = "VITE_API_BASE_URL";
 
 type ViteEnv = {

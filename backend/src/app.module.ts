@@ -16,6 +16,7 @@ import { LeaseModule } from "./modules/lease/lease.module";
 import { PaymentModule } from "./modules/payment/payment.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { SchedulerModule } from "./scheduler/scheduler.module";
+import { AuditLogModule } from "./modules/audit-log/audit-log.module";
 
 const envFiles = [".env"];
 if (process.env.NODE_ENV) {
@@ -48,6 +49,7 @@ if (process.env.NODE_ENV) {
     PaymentModule,
     AuthModule,
     SchedulerModule,
+    AuditLogModule,
   ],
   controllers: [AppController],
   providers: [

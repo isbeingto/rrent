@@ -22,6 +22,7 @@ const config = {
           module: "commonjs",
           target: "es2020",
           skipLibCheck: true,
+          resolveJsonModule: true,
         },
       },
     ],
