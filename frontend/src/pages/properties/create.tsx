@@ -145,31 +145,7 @@ const PropertiesCreate: React.FC = () => {
           </Select>
         </Form.Item>
 
-        <Form.Item
-          label="时区"
-          name="timezone"
-          initialValue="Asia/Shanghai"
-          rules={[
-            { max: 50, message: "时区不能超过50个字符" },
-          ]}
-        >
-          <Select placeholder="请选择时区">
-            <Select.Option value="Asia/Shanghai">Asia/Shanghai</Select.Option>
-            <Select.Option value="America/New_York">America/New_York</Select.Option>
-            <Select.Option value="Europe/London">Europe/London</Select.Option>
-            <Select.Option value="Asia/Tokyo">Asia/Tokyo</Select.Option>
-            <Select.Option value="Asia/Singapore">Asia/Singapore</Select.Option>
-          </Select>
-        </Form.Item>
 
-        <Form.Item
-          label="启用状态"
-          name="isActive"
-          valuePropName="checked"
-          initialValue={true}
-        >
-          <Switch checkedChildren="启用" unCheckedChildren="禁用" />
-        </Form.Item>
       </Form>
     </Create>
   );

@@ -42,12 +42,46 @@ function App() {
                   notificationProvider={useNotificationProvider}
                   routerProvider={routerProvider}
                   resources={[
-                    { name: "organizations", list: "/organizations" },
-                    { name: "properties", list: "/properties" },
-                    { name: "units", list: "/units" },
-                    { name: "tenants", list: "/tenants" },
-                    { name: "leases", list: "/leases" },
-                    { name: "payments", list: "/payments" },
+                    {
+                      name: "organizations",
+                      list: "/organizations",
+                      create: "/organizations/create",
+                      edit: "/organizations/edit/:id",
+                      show: "/organizations/show/:id",
+                    },
+                    {
+                      name: "properties",
+                      list: "/properties",
+                      create: "/properties/create",
+                      edit: "/properties/edit/:id",
+                      show: "/properties/show/:id",
+                    },
+                    {
+                      name: "units",
+                      list: "/units",
+                      create: "/units/create",
+                      edit: "/units/edit/:id",
+                      show: "/units/show/:id",
+                    },
+                    {
+                      name: "tenants",
+                      list: "/tenants",
+                      create: "/tenants/create",
+                      edit: "/tenants/edit/:id",
+                      show: "/tenants/show/:id",
+                    },
+                    {
+                      name: "leases",
+                      list: "/leases",
+                      create: "/leases/create",
+                      edit: "/leases/edit/:id",
+                      show: "/leases/show/:id",
+                    },
+                    {
+                      name: "payments",
+                      list: "/payments",
+                      show: "/payments/show/:id",
+                    },
                   ]}
                   options={{
                     syncWithLocation: true,

@@ -344,6 +344,7 @@ const PaymentsList: React.FC = () => {
       filters={filtersComponent}
       defaultPageSize={20}
       defaultSorter={{ field: "dueDate", order: "asc" }}
+      showCreateButton={false} // Payments create/edit not yet implemented
     />
   );
 };

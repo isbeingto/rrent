@@ -3,7 +3,7 @@ import { Form, Input, InputNumber, DatePicker, Select } from "antd";
 import { useCan } from "@refinedev/core";
 import { useNavigate, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import dayjs from "dayjs";
 import {
   buildRequiredSelectRule,
@@ -71,6 +71,11 @@ const LeasesCreate: React.FC = () => {
   const prefilledUnitId = searchParams.get("unitId");
   const prefilledPropertyId = searchParams.get("propertyId");
   
+  // 用于跟踪选中的物业ID，实现单元联动
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | undefined>(
+    prefilledPropertyId || undefined
+  );
+  
   const { data: canCreate } = useCan({
     resource: "leases",
     action: "create",
@@ -116,16 +121,6 @@ const LeasesCreate: React.FC = () => {
     },
   });
 
-  // 加载单元列表
-  const { selectProps: unitSelectProps } = useSelect({
-    resource: "units",
-    optionLabel: "unitNumber",
-    optionValue: "id",
-    pagination: {
-      pageSize: 100,
-    },
-  });
-
   // 加载物业列表
   const { selectProps: propertySelectProps } = useSelect({
     resource: "properties",
@@ -135,6 +130,25 @@ const LeasesCreate: React.FC = () => {
       pageSize: 100,
     },
   });
+
+  // 加载单元列表 - 根据选中的物业过滤
+  const { selectProps: unitSelectProps, queryResult: unitsQueryResult } = useSelect({
+    resource: "units",
+    optionLabel: "unitNumber",
+    optionValue: "id",
+    pagination: {
+      pageSize: 100,
+    },
+    filters: selectedPropertyId
+      ? [{ field: "propertyId", operator: "eq", value: selectedPropertyId }]
+      : undefined,
+  });
+
+  // 当选择物业变化时，更新状态并清空已选单元
+  const handlePropertyChange = (value: string) => {
+    setSelectedPropertyId(value);
+    form?.setFieldValue("unitId", undefined);
+  };
 
   return (
     <Create saveButtonProps={saveButtonProps}>
@@ -163,6 +177,7 @@ const LeasesCreate: React.FC = () => {
             {...propertySelectProps}
             placeholder={t("common:fields.leaseProperty")}
             disabled={!!prefilledPropertyId}
+            onChange={handlePropertyChange}
             showSearch
             filterOption={(input, option) =>
               (option?.label?.toString() ?? "").toLowerCase().includes(input.toLowerCase())

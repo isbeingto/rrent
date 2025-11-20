@@ -108,8 +108,7 @@ export function ResourceTable<TData extends BaseRecord = BaseRecord>({
       title={title}
       headerButtons={({ defaultButtons }) => (
         <>
-          {defaultButtons}
-          {showCreateButton && canCreate?.can && <CreateButton />}
+          {showCreateButton && canCreate?.can && defaultButtons}
           {extraHeader}
         </>
       )}
